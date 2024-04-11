@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "flicklang"
+version = "0.1.0"
+description = ""
+authors = ["Milan Gittler <gittlermilan@seznam.cz>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+parsy = "^2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
