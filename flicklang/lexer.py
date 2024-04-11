@@ -1,7 +1,7 @@
-from typing import Any
+from typing import List
 
-from exceptions import TokenizationError
-from models import TokenType, Token
+from flicklang.exceptions import TokenizationError
+from flicklang.models import EOFToken, TokenType, Token
 
 
 class Lexer:
@@ -9,7 +9,14 @@ class Lexer:
         self.text = text
         self.pos = 0
 
-    def get_next_token(self) -> Token:
+    def tokenize(self) -> List[Token]:
+        tokens = []
+        while self.pos < len(self.text):
+            token = self.get_next_token()
+            tokens.append(token)
+        return tokens
+    
+    def get_next_token(self) -> Token | EOFToken:
         while self.pos < len(self.text):
             if self.text[self.pos].isspace():
                 self.pos += 1
@@ -20,7 +27,7 @@ class Lexer:
                 continue
 
             if self.pos >= len(self.text):
-                return Token(TokenType.EOF, None)
+                return EOFToken(TokenType.EOF, None)
 
             current_char = self.text[self.pos]
 
@@ -47,6 +54,14 @@ class Lexer:
                 self.pos += 1
                 return Token(TokenType.ASSIGN, '=')
             
+            elif current_char == '(':
+                self.pos += 1
+                return Token(TokenType.LPAREN, '(')
+
+            elif current_char == ')':
+                self.pos += 1
+                return Token(TokenType.RPAREN, ')')
+            
             elif current_char.isdigit():
                 return self.tokenize_number()
 
@@ -56,7 +71,7 @@ class Lexer:
             else:
                 raise TokenizationError(f"Unrecognized character '{current_char}'", self.pos)
 
-        return Token(TokenType.EOF, None)
+        return EOFToken(TokenType.EOF, None)
 
     def skip_comment(self) -> None:
         while self.pos < len(self.text) and self.text[self.pos] != '\n':
@@ -69,6 +84,13 @@ class Lexer:
         start_pos = self.pos
         while self.pos < len(self.text) and self.text[self.pos].isdigit():
             self.pos += 1
+        
+        # Check for a decimal point
+        if self.pos < len(self.text) and self.text[self.pos] == '.':
+            self.pos += 1  # Consume the dot
+            while self.pos < len(self.text) and self.text[self.pos].isdigit():
+                self.pos += 1
+
         num_str = self.text[start_pos:self.pos]
         return Token(TokenType.NUMBER, num_str)
     
