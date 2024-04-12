@@ -1,1 +1,6 @@
-a = 10 if a eq 10 {p a}
+i = 0
+w i ls 10
+{
+    p i
+    i = i + 1
+}

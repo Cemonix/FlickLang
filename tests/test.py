@@ -1,6 +1,6 @@
+from flicklang.interpreter import Interpreter
 from flicklang.lexer import Lexer
 from flicklang.parser import Parser
-from flicklang.models import TokenType, Token
 from flicklang.ast import Assignment, Number, BinaryOp, UnaryOp
 
 
@@ -10,7 +10,7 @@ def test_basic_arithmetic_expression() -> None:
     tokens = Lexer(expression).tokenize()
 
     parser = Parser(tokens)
-    ast = parser.parse()
+    program = parser.parse()
 
     # Check if the AST matches the expected structure:
     #       +
@@ -18,16 +18,18 @@ def test_basic_arithmetic_expression() -> None:
     #     3   *
     #        / \
     #       4   2
-    assert isinstance(ast, BinaryOp), "Root of AST should be a BinaryOp."
+    assert isinstance(program, BinaryOp), "Root of AST should be a BinaryOp."
     assert (
-        isinstance(ast.left, Number) and ast.left.value == "3"
+        isinstance(program.left, Number) and program.left.value == "3"
     ), "Left child of root should be Number(3)."
-    assert isinstance(ast.right, BinaryOp), "Right child of root should be a BinaryOp."
+    assert isinstance(
+        program.right, BinaryOp
+    ), "Right child of root should be a BinaryOp."
     assert (
-        isinstance(ast.right.left, Number) and ast.right.left.value == "4"
+        isinstance(program.right.left, Number) and program.right.left.value == "4"
     ), "Left child of right BinaryOp should be Number(4)."
     assert (
-        isinstance(ast.right.right, Number) and ast.right.right.value == "2"
+        isinstance(program.right.right, Number) and program.right.right.value == "2"
     ), "Right child of right BinaryOp should be Number(2)."
 
     print("Test passed: Basic arithmetic expression parsed correctly.")
@@ -50,11 +52,11 @@ def test_parser_with_unary_and_binary_minus() -> None:
     for case in test_cases:
         tokens = Lexer(case["input"]).tokenize()
         parser = Parser(tokens)
-        ast = parser.parse()
+        program = parser.parse()
 
         assert isinstance(
-            ast, case["expected"]
-        ), f"Test failed for input '{case['input']}'. Expected {case['expected'].__name__}, got {type(ast).__name__}."
+            program, case["expected"]
+        ), f"Test failed for input '{case['input']}'. Expected {case['expected'].__name__}, got {type(program).__name__}."
 
     print("All parser tests with unary and binary minus passed.")
 
@@ -68,19 +70,14 @@ def test_variable_assignment() -> None:
     for case in test_cases:
         tokens = Lexer(case["input"]).tokenize()
         parser = Parser(tokens)
-        ast = parser.parse()
+        program = parser.parse()
 
         assert isinstance(
-            ast, case["expected"]
-        ), f"Test failed for input '{case['input']}'. Expected {case['expected'].__name__}, got {type(ast).__name__}."
+            program, case["expected"]
+        ), f"Test failed for input '{case['input']}'. Expected {case['expected'].__name__}, got {type(program).__name__}."
 
     print("All parser tests with variable assignment passed.")
 
 
-def test_conditions() -> None:
-    tokens = Lexer("a = 10 if a eq 10 {p a}").tokenize()
-    parser = Parser(tokens)
-    ast = parser.parse()
-
 if __name__ == "__main__":
-    test_conditions()
+    test_variable_assignment()

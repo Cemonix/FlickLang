@@ -1,102 +1,89 @@
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import List, Optional, Union
 
 from flicklang.models import Token
 
 
+@dataclass
 class Node:
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__} Node"
+    pass
 
 
+@dataclass
 class Program(Node):
-    def __init__(self, statements: List[Node]) -> None:
-        self.statements = statements
-
-    def __repr__(self) -> str:
-        return f"Program({self.statements})"
+    statements: List[Node]
 
 
+@dataclass
 class Number(Node):
-    def __init__(self, token: Token) -> None:
-        if not token.value:
+    token: Token
+    value: str
+
+    def __post_init__(self):
+        if not self.token.value:
             raise ValueError("Number token has no value.")
-        self.token = token
-        self.value = token.value
-
-    def __repr__(self) -> str:
-        return f"Number({self.value})"
 
 
+@dataclass
 class BinaryOp(Node):
-    def __init__(self, left: Node, op_token: Token, right: Node) -> None:
-        self.left = left
-        self.op_token = op_token
-        self.right = right
-
-    def __repr__(self) -> str:
-        return f"BinaryOp({self.left.__repr__()}, {self.op_token.value}, {self.right.__repr__()})"
+    left: Node
+    op_token: Token
+    right: Node
 
 
+@dataclass
 class UnaryOp(Node):
-    def __init__(self, op_token: Token, operand: Node) -> None:
-        self.op_token = op_token
-        self.operand = operand
-
-    def __repr__(self) -> str:
-        return f"UnaryOp({self.op_token.value}, {self.operand.__repr__()})"
+    op_token: Token
+    operand: Node
 
 
+@dataclass
 class Assignment(Node):
-    def __init__(self, variable_name: Node, variable_value: Node) -> None:
-        self.variable_name = variable_name
-        self.variable_value = variable_value
-
-    def __repr__(self) -> str:
-        return f"Assignment({self.variable_name.__repr__()}, {self.variable_value.__repr__()})"
+    variable_name: Node
+    variable_value: Node
 
 
+@dataclass
 class Variable(Node):
-    def __init__(self, token: Token) -> None:
-        if not token.value:
-            raise ValueError("Number token has no value.")
-        self.token = token
-        self.value = token.value
+    token: Token
+    value: str
 
-    def __repr__(self) -> str:
-        return f"Var({self.value})"
+    def __post_init__(self):
+        if not self.token.value:
+            raise ValueError("Variable token has no value.")
 
 
+@dataclass
 class Print(Node):
-    def __init__(self, expr: Node) -> None:
-        self.expr: Node = expr
-
-    def __repr__(self) -> str:
-        return f"Print({self.expr.__repr__()})"
+    expr: Node
 
 
+@dataclass
 class String(Node):
-    def __init__(self, token: Token) -> None:
-        self.token = token
-        self.value = token.value
-
-    def __repr__(self) -> str:
-        return f'String("{self.value}")'
+    token: Token
+    value: str
 
 
+@dataclass
 class If(Node):
-    def __init__(
-        self,
-        condition: Node,
-        true_branch: List[Node],
-        false_branch: Optional["If" | List[Node]] = None,
-    ) -> None:
-        self.condition = condition
-        self.true_branch = true_branch
-        self.false_branch = false_branch
+    condition: Node
+    true_branch: List[Node]
+    false_branch: Optional[Union["If", List[Node]]] = None
 
 
+@dataclass
 class ComparisonOp(Node):
-    def __init__(self, left: Node, operator: Token, right: Node) -> None:
-        self.left = left
-        self.operator = operator
-        self.right = right
+    left: Node
+    operator: Token
+    right: Node
+
+
+@dataclass
+class ArrayLiteral(Node):
+    elements: List[Node]
+
+
+@dataclass
+class WhileLoop(Node):
+    condition: Node
+    body: List[Node]

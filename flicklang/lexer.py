@@ -1,25 +1,21 @@
 from typing import List
 
 from flicklang.exceptions import TokenizationError
-from flicklang.models import EOFToken, TokenType, Token
+from flicklang.models import (
+    SyntaxToken,
+    SyntaxTokenType,
+    Token,
+    EOFToken,
+    Operator,
+    Symbol,
+    Fundamental,
+)
 
 
 class Lexer:
     def __init__(self, text: str) -> None:
         self.text = text
         self.pos = 0
-        self.keyword_mapping = {
-            "p": TokenType.PRINT,
-            "if": TokenType.IF,
-            "eli": TokenType.ELI,
-            "el": TokenType.EL,
-            "eq": TokenType.EQ,
-            "neq": TokenType.NEQ,
-            "gr": TokenType.GR,
-            "gre": TokenType.GRE,
-            "ls": TokenType.LS,
-            "lse": TokenType.LSE,
-        }
 
     def tokenize(self) -> List[Token]:
         tokens = []
@@ -42,7 +38,7 @@ class Lexer:
                 continue
 
             if self.pos >= len(self.text):
-                return EOFToken(TokenType.EOF, None)
+                return EOFToken(Fundamental.EOF)
 
             current_char = self.text[self.pos]
 
@@ -51,52 +47,64 @@ class Lexer:
 
             elif current_char == "+":
                 self.pos += 1
-                return Token(TokenType.PLUS, "+")
+                return Token(Operator.PLUS, "+")
 
             elif current_char == "-":
                 self.pos += 1
-                return Token(TokenType.MINUS, "-")
+                return Token(Operator.MINUS, "-")
 
             elif current_char == "*":
                 self.pos += 1
-                return Token(TokenType.MULTIPLY, "*")
+                return Token(Operator.MULTIPLY, "*")
 
             elif current_char == "/":
                 self.pos += 1
-                return Token(TokenType.DIVIDE, "/")
+                return Token(Operator.DIVIDE, "/")
 
             elif current_char == "=":
                 self.pos += 1
-                return Token(TokenType.ASSIGN, "=")
+                return Token(Operator.ASSIGN, "=")
 
             elif current_char == "(":
                 self.pos += 1
-                return Token(TokenType.LPAREN, "(")
+                return Token(Symbol.LPAREN, "(")
 
             elif current_char == ")":
                 self.pos += 1
-                return Token(TokenType.RPAREN, ")")
+                return Token(Symbol.RPAREN, ")")
 
             elif current_char == "{":
                 self.pos += 1
-                return Token(TokenType.BLOCK_START, "{")
+                return Token(Symbol.BLOCK_START, "{")
 
             elif current_char == "}":
                 self.pos += 1
-                return Token(TokenType.BLOCK_END, "}")
+                return Token(Symbol.BLOCK_END, "}")
+            
+            elif current_char == "[":
+                self.pos += 1
+                return Token(Symbol.LBRACKET, "[")
+
+            elif current_char == "]":
+                self.pos += 1
+                return Token(Symbol.RBRACKET, "]")
+            
+            elif current_char == ",":
+                self.pos += 1
+                return Token(Symbol.COMMA, ",")
 
             elif current_char.isdigit():
                 return self.tokenize_number()
 
             elif current_char.isalpha() or current_char == "_":
-                return self.tokenize_identifier()
+                return self.tokenize_syntax()
 
             else:
                 raise TokenizationError(
                     f"Unrecognized character '{current_char}'", self.pos
                 )
 
-        return EOFToken(TokenType.EOF, None)
+        return EOFToken(Fundamental.EOF)
 
     def skip_comment(self) -> None:
         while self.pos < len(self.text) and self.text[self.pos] != "\n":
@@ -119,18 +127,7 @@ class Lexer:
                 self.pos += 1
 
         num_str = self.text[start_pos : self.pos]
-        return Token(TokenType.NUMBER, num_str)
-
-    def tokenize_identifier(self) -> Token:
-        start_pos = self.pos
-        while self.pos < len(self.text) and (
-            self.text[self.pos].isalnum() or self.text[self.pos] == "_"
-        ):
-            self.pos += 1
-
-        ident_str = self.text[start_pos : self.pos]
-        token_type = self.keyword_mapping.get(ident_str, TokenType.IDENTIFIER)
-        return Token(token_type, ident_str)
+        return Token(Fundamental.NUMBER, num_str)
 
     def tokenize_string(self) -> Token:
         self.pos += 1  # Skip the opening quote
@@ -143,4 +140,22 @@ class Lexer:
 
         string_value = self.text[start_pos : self.pos]
         self.pos += 1  # Skip the closing quote
-        return Token(TokenType.STRING, string_value)
+        return Token(Fundamental.STRING, string_value)
+    
+    def tokenize_syntax(self) -> Token:
+        start_pos = self.pos
+        while self.pos < len(self.text) and (
+            self.text[self.pos].isalnum() or self.text[self.pos] == "_"
+        ):
+            self.pos += 1
+
+        ident_str = self.text[start_pos : self.pos]
+        token_type = self.determine_token_type(ident_str)
+        return Token(token_type, ident_str)
+
+    def determine_token_type(self, ident_str: str) -> SyntaxTokenType:
+        for enum in SyntaxToken:
+            for member in enum:
+                if member.value == ident_str:
+                    return member
+        return Fundamental.IDENTIFIER

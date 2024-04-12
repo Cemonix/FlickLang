@@ -1,48 +1,60 @@
-from enum import Enum, auto
+from dataclasses import dataclass
+from typing import Union
+from enum import Enum
 
 
-class TokenType(Enum):
-    NUMBER = auto()
-    IDENTIFIER = auto()
-    STRING = auto()
-    EOF = auto()
+class Keyword(Enum):
+    IF = "if"   # if
+    ELI = "eli" # elif
+    EL = "el"   # else
+    W = "w"     # while loop
+    P = "p"     # print
+
+
+class Operator(Enum):
     ASSIGN = "="
     PLUS = "+"
     MINUS = "-"
     MULTIPLY = "*"
     DIVIDE = "/"
+
+
+class Symbol(Enum):
     LPAREN = "("
     RPAREN = ")"
-    PRINT = "p"
-    BLOCK_START = '{'
-    BLOCK_END = '}'
-    IF = 'if'
-    ELI = 'elif'
-    EL = 'else'
-    EQ = 'eq'
-    NEQ = 'neq'
-    GR = 'gr'
-    LS = 'ls'
-    GRE = 'gre'
-    LSE = 'lse'
+    BLOCK_START = "{"
+    BLOCK_END = "}"
+    LBRACKET = "["
+    RBRACKET = "]"
+    COMMA = ","
 
+
+class Comparison(Enum):
+    EQ = "eq"
+    NEQ = "neq"
+    GR = "gr"
+    LS = "ls"
+    GRE = "gre"
+    LSE = "lse"
+
+
+class Fundamental(Enum):
+    NUMBER = "number"
+    IDENTIFIER = "identifier"
+    STRING = "string"
+    EOF = "eof"
+
+
+SyntaxTokenType = Union[Keyword, Fundamental, Operator, Symbol, Comparison]
+SyntaxToken = [Keyword, Operator, Symbol, Comparison, Fundamental]
+
+
+@dataclass
 class Token:
-    def __init__(self, type: TokenType, value: str) -> None:
-        self.type = type
-        self.value = value
-
-    def __repr__(self) -> str:
-        return f"Token({self.type}, {self.value})"
+    type: SyntaxTokenType
+    value: str
 
 
-class EOFToken(Token):
-    def __init__(self, type: TokenType, value: str | None) -> None:
-        self.type = type
-        self.value = value
-
-    def __repr__(self) -> str:
-        return (
-            f"EOFToken({self.type}, {self.value})"
-            if self.value is not None
-            else f"EOFToken({self.type})"
-        )
+@dataclass
+class EOFToken:
+    type: Fundamental

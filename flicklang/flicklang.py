@@ -17,6 +17,7 @@ flicklang_ascii = """
 FlickLang Interactive Mode. Type 'exit' to exit.
 """
 
+
 def run_flicklang_program(source_code: str) -> None:
     lexer = Lexer(source_code)
     tokens = lexer.tokenize()
@@ -25,11 +26,14 @@ def run_flicklang_program(source_code: str) -> None:
     program = parser.parse()
 
     interpreter = Interpreter()
-    interpreter.interpret(program)
+    interpreter.visit(program)
+
 
 def main() -> None:
     arg_parser = argparse.ArgumentParser(description="Run FlickLang programs.")
-    arg_parser.add_argument("file_path", nargs='?', default=None, help="The FlickLang file to run")
+    arg_parser.add_argument(
+        "file_path", nargs="?", default=None, help="The FlickLang file to run"
+    )
 
     args = arg_parser.parse_args()
 
@@ -37,7 +41,7 @@ def main() -> None:
         file_path = args.file_path
         print(f"Running FlickLang interpreter on file: {file_path}")
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, "r", encoding="utf-8") as file:
                 source_code = file.read()
                 run_flicklang_program(source_code)
         except FileNotFoundError:
@@ -50,12 +54,13 @@ def main() -> None:
         while True:
             try:
                 source_code = input(">>> ")
-                if source_code.strip().lower() == 'exit':
+                if source_code.strip().lower() == "exit":
                     print("Exiting FlickLang Interactive Mode.")
                     break
                 run_flicklang_program(source_code)
             except Exception as e:
                 print(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()

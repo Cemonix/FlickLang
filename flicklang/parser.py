@@ -1,6 +1,7 @@
 from typing import List
 
 from flicklang.ast import (
+    ArrayLiteral,
     Assignment,
     ComparisonOp,
     If,
@@ -12,8 +13,18 @@ from flicklang.ast import (
     String,
     UnaryOp,
     Variable,
+    WhileLoop,
 )
-from flicklang.models import EOFToken, Token, TokenType
+from flicklang.models import (
+    Token,
+    SyntaxTokenType,
+    EOFToken,
+    Keyword,
+    Symbol,
+    Fundamental,
+    Operator,
+    Comparison,
+)
 
 
 class Parser:
@@ -41,24 +52,27 @@ class Parser:
             raise Exception("Current token is None")
 
         if (
-            self.current_token.type == TokenType.IDENTIFIER
-            and self.peek_token().type == TokenType.ASSIGN
+            self.current_token.type == Fundamental.IDENTIFIER
+            and self.peek_token().type == Operator.ASSIGN
         ):
             variable_token = self.current_token
-            self.eat(TokenType.IDENTIFIER)
-            self.eat(TokenType.ASSIGN)
+            self.eat(Fundamental.IDENTIFIER)
+            self.eat(Operator.ASSIGN)
             assignment = Assignment(
-                variable_name=Variable(variable_token), variable_value=self.expr()
+                variable_name=Variable(variable_token, variable_token.value),
+                variable_value=self.expr(),
             )
             return assignment
-        elif self.current_token.type == TokenType.PRINT:
+        elif self.current_token.type == Keyword.P:
             return self.parse_print_statement()
-        elif self.current_token.type == TokenType.IF:
+        elif self.current_token.type == Keyword.IF:
             return self.parse_if_statement()
+        elif self.current_token.type == Keyword.W:
+            return self.parse_while_loop()
         else:
             return Print(self.expr())
 
-    def eat(self, token_type: TokenType) -> None:
+    def eat(self, token_type: SyntaxTokenType) -> None:
         if self.current_token is None:
             raise Exception("Current token is None")
 
@@ -81,7 +95,7 @@ class Parser:
         if peek_pos < len(self.tokens):
             return self.tokens[peek_pos]
         else:
-            return EOFToken(TokenType.EOF, None)
+            return EOFToken(Fundamental.EOF)
 
     def factor(self) -> Node:
         """Parse a factor (number or parenthesized expression), reducing consecutive unary minus."""
@@ -90,28 +104,30 @@ class Parser:
 
         # Count consecutive unary minus operators
         unary_minus_count = 0
-        while self.current_token.type == TokenType.MINUS:
-            self.eat(TokenType.MINUS)
+        while self.current_token.type == Operator.MINUS:
+            self.eat(Operator.MINUS)
             unary_minus_count += 1
 
-        if self.current_token.type == TokenType.NUMBER:
-            node = Number(self.current_token)
-            self.eat(TokenType.NUMBER)
-        elif self.current_token.type == TokenType.LPAREN:
-            self.eat(TokenType.LPAREN)
+        if self.current_token.type == Fundamental.NUMBER:
+            node = Number(self.current_token, self.current_token.value)
+            self.eat(Fundamental.NUMBER)
+        elif self.current_token.type == Symbol.LPAREN:
+            self.eat(Symbol.LPAREN)
             node = self.expr()
-            self.eat(TokenType.RPAREN)
-        elif self.current_token.type == TokenType.IDENTIFIER:
-            node = Variable(self.current_token)
-            self.eat(TokenType.IDENTIFIER)
-        elif self.current_token.type == TokenType.STRING:
-            node = String(self.current_token)
-            self.eat(TokenType.STRING)
+            self.eat(Symbol.RPAREN)
+        elif self.current_token.type == Symbol.LBRACKET:
+            node = self.parse_array_literal()
+        elif self.current_token.type == Fundamental.IDENTIFIER:
+            node = Variable(self.current_token, self.current_token.value)
+            self.eat(Fundamental.IDENTIFIER)
+        elif self.current_token.type == Fundamental.STRING:
+            node = String(self.current_token, self.current_token.value)
+            self.eat(Fundamental.STRING)
         else:
             raise Exception(f"Unexpected token: {self.current_token.type}")
 
         if unary_minus_count % 2 == 1:
-            return UnaryOp(op_token=Token(TokenType.MINUS, "-"), operand=node)
+            return UnaryOp(op_token=Token(Operator.MINUS, "-"), operand=node)
 
         return node
 
@@ -120,14 +136,14 @@ class Parser:
         node: Node = self.factor()
 
         while self.current_token is not None and self.current_token.type in (
-            TokenType.MULTIPLY,
-            TokenType.DIVIDE,
+            Operator.MULTIPLY,
+            Operator.DIVIDE,
         ):
             token = self.current_token
-            if token.type == TokenType.MULTIPLY:
-                self.eat(TokenType.MULTIPLY)
-            elif token.type == TokenType.DIVIDE:
-                self.eat(TokenType.DIVIDE)
+            if token.type == Operator.MULTIPLY:
+                self.eat(Operator.MULTIPLY)
+            elif token.type == Operator.DIVIDE:
+                self.eat(Operator.DIVIDE)
             node = BinaryOp(left=node, op_token=token, right=self.factor())
         return node
 
@@ -135,19 +151,19 @@ class Parser:
         """Parse an expression (term followed by zero or more addition/subtraction)."""
         node = self.term()
         while self.current_token is not None and self.current_token.type in (
-            TokenType.PLUS,
-            TokenType.MINUS,
+            Operator.PLUS,
+            Operator.MINUS,
         ):
             token = self.current_token
-            if token.type == TokenType.PLUS:
-                self.eat(TokenType.PLUS)
-            elif token.type == TokenType.MINUS:
-                self.eat(TokenType.MINUS)
+            if token.type == Operator.PLUS:
+                self.eat(Operator.PLUS)
+            elif token.type == Operator.MINUS:
+                self.eat(Operator.MINUS)
             node = BinaryOp(left=node, op_token=token, right=self.term())
         return node
 
     def parse_print_statement(self) -> Print:
-        self.eat(TokenType.PRINT)
+        self.eat(Keyword.P)
         expr = self.expr()
         return Print(expr)
 
@@ -158,12 +174,12 @@ class Parser:
         node = self.expr()
 
         while self.current_token.type in (
-            TokenType.EQ,
-            TokenType.NEQ,
-            TokenType.GR,
-            TokenType.GRE,
-            TokenType.LS,
-            TokenType.LSE,
+            Comparison.EQ,
+            Comparison.NEQ,
+            Comparison.GR,
+            Comparison.GRE,
+            Comparison.LS,
+            Comparison.LSE,
         ):
             token = self.current_token
             self.eat(token.type)
@@ -175,20 +191,24 @@ class Parser:
         if self.current_token is None:
             raise Exception("Current token is None")
 
-        self.eat(TokenType.IF) if self.current_token.type == TokenType.IF else self.eat(TokenType.ELI)
+        (
+            self.eat(Keyword.IF)
+            if self.current_token.type == Keyword.IF
+            else self.eat(Keyword.ELI)
+        )
         condition = self.parse_comparison()
 
         true_block = self.parse_block()
 
-        # Only if statement~
+        # Only if statement
         if self.current_token is None:
             return If(condition, true_block, None)
 
         false_block = None
-        if self.current_token.type == TokenType.ELI:
+        if self.current_token.type == Keyword.ELI:
             false_block = self.parse_if_statement()
-        elif self.current_token.type == TokenType.EL:
-            self.eat(TokenType.EL)
+        elif self.current_token.type == Keyword.EL:
+            self.eat(Keyword.EL)
             false_block = self.parse_block()
 
         return If(condition, true_block, false_block)
@@ -198,8 +218,32 @@ class Parser:
             raise Exception("Current token is None")
 
         statements = []
-        self.eat(TokenType.BLOCK_START)
-        while not self.current_token.type in (TokenType.BLOCK_END, TokenType.EOF):
+        self.eat(Symbol.BLOCK_START)
+        while not self.current_token.type in (Symbol.BLOCK_END, Fundamental.EOF):
             statements.append(self.parse_statement())
-        self.eat(TokenType.BLOCK_END)
+        self.eat(Symbol.BLOCK_END)
         return statements
+
+    def parse_array_literal(self) -> ArrayLiteral:
+        if self.current_token is None:
+            raise Exception("Current token is None")
+
+        elements = []
+        self.eat(Symbol.LBRACKET)
+        if not self.current_token.type == Symbol.RBRACKET:
+            elements.append(self.expr())
+            while self.current_token.type == Symbol.COMMA:
+                self.eat(Symbol.COMMA)
+                elements.append(self.expr())
+        self.eat(Symbol.RBRACKET)
+        return ArrayLiteral(elements)
+
+    def parse_while_loop(self) -> WhileLoop:
+        if self.current_token is None:
+            raise Exception("Current token is None")
+        
+        self.eat(Keyword.W)
+        condition = self.parse_comparison()
+        body = self.parse_block()
+
+        return WhileLoop(condition, body)
