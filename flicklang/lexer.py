@@ -60,6 +60,10 @@ class Lexer:
             elif current_char == "/":
                 self.pos += 1
                 return Token(Operator.DIVIDE, "/")
+            
+            elif current_char == "%":
+                self.pos += 1
+                return Token(Operator.MODULO, "%")
 
             elif current_char == "=":
                 self.pos += 1

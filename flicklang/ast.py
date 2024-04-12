@@ -45,12 +45,7 @@ class Assignment(Node):
 
 @dataclass
 class Variable(Node):
-    token: Token
-    value: str
-
-    def __post_init__(self):
-        if not self.token.value:
-            raise ValueError("Variable token has no value.")
+    name: str
 
 
 @dataclass
@@ -81,6 +76,12 @@ class ComparisonOp(Node):
 @dataclass
 class ArrayLiteral(Node):
     elements: List[Node]
+
+
+@dataclass
+class ArrayIndex(Node):
+    array: Node
+    index: Node
 
 
 @dataclass

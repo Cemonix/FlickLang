@@ -1,4 +1,5 @@
 from flicklang.ast import (
+    ArrayIndex,
     ArrayLiteral,
     ComparisonOp,
     If,
@@ -51,6 +52,8 @@ class Interpreter:
             return self.visit(node.left) * self.visit(node.right)
         elif node.op_token.type == Operator.DIVIDE:
             return self.visit(node.left) / self.visit(node.right)
+        elif node.op_token.type == Operator.MODULO:
+            return self.visit(node.left) % self.visit(node.right)
         else:
             raise Exception(f"Unexpected binary operator: {node.op_token.type}")
 
@@ -62,7 +65,7 @@ class Interpreter:
             raise Exception(f"Unsupported unary operator: {op_type}")
 
     def visit_Variable(self, node: Variable) -> float:
-        var_name = node.token.value
+        var_name = node.name
         if var_name in self.environment:
             return self.environment[var_name]
         else:
@@ -72,9 +75,9 @@ class Interpreter:
         return node.value
 
     def visit_Assignment(self, node: Assignment) -> None:
-        var_name = cast(Variable, node.variable_name)
+        variable = cast(Variable, node.variable_name)
         value = self.visit(node.variable_value)
-        self.environment[var_name.token.value] = value
+        self.environment[variable.name] = value
 
     def visit_Print(self, node: Print) -> None:
         value = self.visit(node.expr)
@@ -114,6 +117,19 @@ class Interpreter:
         
     def visit_ArrayLiteral(self, node: ArrayLiteral) -> list:
         return [self.visit(element) for element in node.elements]
+    
+    def visit_ArrayIndex(self, node: ArrayIndex) -> Any:
+        array_val = self.visit(node.array)
+        index_val = self.visit(node.index)
+
+        if not isinstance(index_val, int):
+            raise TypeError(f"Index has to be int. Index type was {type(index_val)}.")
+        index_val = int(index_val)
+
+        if not isinstance(array_val, list):
+            raise TypeError("Attempting to index a non-array type.")
+        
+        return array_val[index_val]
     
     def visit_WhileLoop(self, node: WhileLoop) -> None:
         while True:

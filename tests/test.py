@@ -79,5 +79,39 @@ def test_variable_assignment() -> None:
     print("All parser tests with variable assignment passed.")
 
 
+def test() -> None:
+    tokens = Lexer(
+        """
+        .. Initialize an array with numbers 1 through 10
+        a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+        .. Variable to hold the sum of even numbers
+        sum = 0
+
+        .. Counter variable for the while loop
+        i = 0
+
+        .. While loop to iterate through the array
+        w i ls 10 
+        {
+            .. Check if the current number is even
+            if a[i] % 2 eq 0
+            {
+                sum = sum + a[i]  .. Add even number to sum
+            }
+            
+            i = i + 1  .. Increment counter
+        }
+
+        .. Print the sum of even numbers
+        p sum
+        """
+    ).tokenize()
+    parser = Parser(tokens)
+    program = parser.parse()
+    interpreter = Interpreter()
+    interpreter.interpret(program)
+
+
 if __name__ == "__main__":
-    test_variable_assignment()
+    test()

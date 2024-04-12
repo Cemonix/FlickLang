@@ -17,6 +17,7 @@ class Operator(Enum):
     MINUS = "-"
     MULTIPLY = "*"
     DIVIDE = "/"
+    MODULO = "%"
 
 
 class Symbol(Enum):

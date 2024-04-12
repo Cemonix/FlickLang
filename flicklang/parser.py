@@ -1,6 +1,7 @@
 from typing import List
 
 from flicklang.ast import (
+    ArrayIndex,
     ArrayLiteral,
     Assignment,
     ComparisonOp,
@@ -59,7 +60,7 @@ class Parser:
             self.eat(Fundamental.IDENTIFIER)
             self.eat(Operator.ASSIGN)
             assignment = Assignment(
-                variable_name=Variable(variable_token, variable_token.value),
+                variable_name=Variable(variable_token.value),
                 variable_value=self.expr(),
             )
             return assignment
@@ -115,10 +116,20 @@ class Parser:
             self.eat(Symbol.LPAREN)
             node = self.expr()
             self.eat(Symbol.RPAREN)
+        elif (
+            self.current_token.type == Fundamental.IDENTIFIER
+            and self.peek_token().type == Symbol.LBRACKET
+        ):
+            variable_token = self.current_token
+            self.eat(Fundamental.IDENTIFIER)
+            self.eat(Symbol.LBRACKET)
+            index = self.expr()
+            self.eat(Symbol.RBRACKET)
+            return ArrayIndex(array=Variable(variable_token.value), index=index)
         elif self.current_token.type == Symbol.LBRACKET:
             node = self.parse_array_literal()
         elif self.current_token.type == Fundamental.IDENTIFIER:
-            node = Variable(self.current_token, self.current_token.value)
+            node = Variable(self.current_token.value)
             self.eat(Fundamental.IDENTIFIER)
         elif self.current_token.type == Fundamental.STRING:
             node = String(self.current_token, self.current_token.value)
@@ -138,12 +149,15 @@ class Parser:
         while self.current_token is not None and self.current_token.type in (
             Operator.MULTIPLY,
             Operator.DIVIDE,
+            Operator.MODULO
         ):
             token = self.current_token
             if token.type == Operator.MULTIPLY:
                 self.eat(Operator.MULTIPLY)
             elif token.type == Operator.DIVIDE:
                 self.eat(Operator.DIVIDE)
+            elif token.type == Operator.MODULO:
+                self.eat(Operator.MODULO)
             node = BinaryOp(left=node, op_token=token, right=self.factor())
         return node
 

@@ -26,7 +26,7 @@ def run_flicklang_program(source_code: str) -> None:
     program = parser.parse()
 
     interpreter = Interpreter()
-    interpreter.visit(program)
+    interpreter.interpret(program)
 
 
 def main() -> None:
