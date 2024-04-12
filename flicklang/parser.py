@@ -180,6 +180,10 @@ class Parser:
 
         true_block = self.parse_block()
 
+        # Only if statement~
+        if self.current_token is None:
+            return If(condition, true_block, None)
+
         false_block = None
         if self.current_token.type == TokenType.ELI:
             false_block = self.parse_if_statement()

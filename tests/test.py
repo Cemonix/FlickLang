@@ -77,5 +77,10 @@ def test_variable_assignment() -> None:
     print("All parser tests with variable assignment passed.")
 
 
+def test_conditions() -> None:
+    tokens = Lexer("a = 10 if a eq 10 {p a}").tokenize()
+    parser = Parser(tokens)
+    ast = parser.parse()
+
 if __name__ == "__main__":
-    test_variable_assignment()
+    test_conditions()
