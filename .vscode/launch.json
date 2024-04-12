@@ -6,14 +6,14 @@
       "type": "debugpy",
       "request": "launch",
       "cwd": "${workspaceFolder}",
-      "program": "flicklang/__init__.py",
+      "program": "flicklang/run_flicklang.py",
       "console": "integratedTerminal",
       "env": {
         "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}"
       }
     },
     {
-      "name": "FlickLang Tests",
+      "name": "FlickLang Test",
       "type": "debugpy",
       "request": "launch",
       "cwd": "${workspaceFolder}",

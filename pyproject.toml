@@ -14,4 +14,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-flicklang = 'flicklang.flicklang:main'
+flicklang = 'flicklang.run_flicklang:main'

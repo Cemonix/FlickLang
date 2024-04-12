@@ -81,8 +81,8 @@ class Interpreter:
         self.environment[variable.name] = value
 
     def visit_Print(self, node: Print) -> None:
-        value = self.visit(node.expr)
-        print(value)
+        output = ' '.join(str(self.visit(expr)) for expr in node.expressions)
+        print(output)
 
     def visit_If(self, node: If) -> Any:
         condition_result = self.visit(node.condition)

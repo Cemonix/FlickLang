@@ -82,32 +82,7 @@ def test_variable_assignment() -> None:
 def test() -> None:
     tokens = Lexer(
         """
-        array = [5, 3, 7, 10, -5, 3]
-        array_len = 6
-        .. Bubble sort
-        i = 0
-        w i ls array_len
-        {
-            j = 0
-            w j ls array_len
-            {
-                if array[i] ls array[j]
-                {
-                    temp = array[i]
-                    array[i] = array[j]
-                    array[j] = temp
-                }
-                j = j + 1
-            }
-            i = i + 1 
-        }
-
-        i = 0
-        w i ls array_len
-        {
-            p array[i]
-            i = i + 1
-        }
+        a = 10 p 'a is: ', a
         """
     ).tokenize()
     parser = Parser(tokens)

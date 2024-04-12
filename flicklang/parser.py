@@ -179,8 +179,15 @@ class Parser:
 
     def parse_print_statement(self) -> Print:
         self.eat(Keyword.P)
-        expr = self.expr()
-        return Print(expr)
+        expressions = [self.expr()]
+
+        while (
+            self.current_token is not None and self.current_token.type == Symbol.COMMA
+        ):
+            self.eat(Symbol.COMMA)
+            expressions.append(self.expr())
+
+        return Print(expressions)
 
     def parse_comparison(self) -> Node:
         if self.current_token is None:
@@ -229,25 +236,22 @@ class Parser:
         return If(condition, true_block, false_block)
 
     def parse_block(self) -> List[Node]:
-        if self.current_token is None:
-            raise Exception("Current token is None")
-
         statements = []
         self.eat(Symbol.BLOCK_START)
-        while not self.current_token.type in (Symbol.BLOCK_END, Fundamental.EOF):
+        while self.current_token is not None and not self.current_token.type in (
+            Symbol.BLOCK_END,
+            Fundamental.EOF,
+        ):
             statements.append(self.parse_statement())
         self.eat(Symbol.BLOCK_END)
         return statements
 
     def parse_array_literal(self) -> ArrayLiteral:
-        if self.current_token is None:
-            raise Exception("Current token is None")
-
         elements = []
         self.eat(Symbol.LBRACKET)
-        if not self.current_token.type == Symbol.RBRACKET:
+        if self.current_token is not None and not self.current_token.type == Symbol.RBRACKET:
             elements.append(self.expr())
-            while self.current_token.type == Symbol.COMMA:
+            while self.current_token is not None and self.current_token.type == Symbol.COMMA:
                 self.eat(Symbol.COMMA)
                 elements.append(self.expr())
         self.eat(Symbol.RBRACKET)

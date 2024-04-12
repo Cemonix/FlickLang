@@ -50,7 +50,7 @@ class Variable(Node):
 
 @dataclass
 class Print(Node):
-    expr: Node
+    expressions: List[Node]
 
 
 @dataclass
