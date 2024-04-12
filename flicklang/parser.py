@@ -2,6 +2,7 @@ from typing import List
 
 from flicklang.ast import (
     ArrayIndex,
+    ArrayIndexAssignment,
     ArrayLiteral,
     Assignment,
     ComparisonOp,
@@ -64,6 +65,11 @@ class Parser:
                 variable_value=self.expr(),
             )
             return assignment
+        elif (
+            self.current_token.type == Fundamental.IDENTIFIER
+            and self.peek_token().type == Symbol.LBRACKET
+        ):
+            return self.parse_array_access_or_assignment()
         elif self.current_token.type == Keyword.P:
             return self.parse_print_statement()
         elif self.current_token.type == Keyword.IF:
@@ -71,7 +77,7 @@ class Parser:
         elif self.current_token.type == Keyword.W:
             return self.parse_while_loop()
         else:
-            return Print(self.expr())
+            return self.expr()
 
     def eat(self, token_type: SyntaxTokenType) -> None:
         if self.current_token is None:
@@ -120,12 +126,7 @@ class Parser:
             self.current_token.type == Fundamental.IDENTIFIER
             and self.peek_token().type == Symbol.LBRACKET
         ):
-            variable_token = self.current_token
-            self.eat(Fundamental.IDENTIFIER)
-            self.eat(Symbol.LBRACKET)
-            index = self.expr()
-            self.eat(Symbol.RBRACKET)
-            return ArrayIndex(array=Variable(variable_token.value), index=index)
+            node = self.parse_array_access_or_assignment()
         elif self.current_token.type == Symbol.LBRACKET:
             node = self.parse_array_literal()
         elif self.current_token.type == Fundamental.IDENTIFIER:
@@ -149,7 +150,7 @@ class Parser:
         while self.current_token is not None and self.current_token.type in (
             Operator.MULTIPLY,
             Operator.DIVIDE,
-            Operator.MODULO
+            Operator.MODULO,
         ):
             token = self.current_token
             if token.type == Operator.MULTIPLY:
@@ -252,10 +253,29 @@ class Parser:
         self.eat(Symbol.RBRACKET)
         return ArrayLiteral(elements)
 
+    def parse_array_access_or_assignment(self) -> ArrayIndexAssignment | ArrayIndex:
+        if self.current_token is None:
+            raise Exception("Current token is None")
+
+        variable_token = self.current_token
+        self.eat(Fundamental.IDENTIFIER)
+        self.eat(Symbol.LBRACKET)
+        index = self.expr()
+        self.eat(Symbol.RBRACKET)
+
+        if self.current_token.type == Operator.ASSIGN:
+            self.eat(Operator.ASSIGN)
+            value = self.expr()
+            return ArrayIndexAssignment(
+                array=Variable(variable_token.value), index=index, value=value
+            )
+        else:
+            return ArrayIndex(array=Variable(variable_token.value), index=index)
+
     def parse_while_loop(self) -> WhileLoop:
         if self.current_token is None:
             raise Exception("Current token is None")
-        
+
         self.eat(Keyword.W)
         condition = self.parse_comparison()
         body = self.parse_block()

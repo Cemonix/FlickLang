@@ -82,29 +82,32 @@ def test_variable_assignment() -> None:
 def test() -> None:
     tokens = Lexer(
         """
-        .. Initialize an array with numbers 1 through 10
-        a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-        .. Variable to hold the sum of even numbers
-        sum = 0
-
-        .. Counter variable for the while loop
+        array = [5, 3, 7, 10, -5, 3]
+        array_len = 6
+        .. Bubble sort
         i = 0
-
-        .. While loop to iterate through the array
-        w i ls 10 
+        w i ls array_len
         {
-            .. Check if the current number is even
-            if a[i] % 2 eq 0
+            j = 0
+            w j ls array_len
             {
-                sum = sum + a[i]  .. Add even number to sum
+                if array[i] ls array[j]
+                {
+                    temp = array[i]
+                    array[i] = array[j]
+                    array[j] = temp
+                }
+                j = j + 1
             }
-            
-            i = i + 1  .. Increment counter
+            i = i + 1 
         }
 
-        .. Print the sum of even numbers
-        p sum
+        i = 0
+        w i ls array_len
+        {
+            p array[i]
+            i = i + 1
+        }
         """
     ).tokenize()
     parser = Parser(tokens)

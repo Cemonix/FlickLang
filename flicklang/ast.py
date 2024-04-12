@@ -85,6 +85,13 @@ class ArrayIndex(Node):
 
 
 @dataclass
+class ArrayIndexAssignment(Node):
+    array: Variable
+    index: Node
+    value: Node
+
+
+@dataclass
 class WhileLoop(Node):
     condition: Node
     body: List[Node]

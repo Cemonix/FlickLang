@@ -1,5 +1,6 @@
 from flicklang.ast import (
     ArrayIndex,
+    ArrayIndexAssignment,
     ArrayLiteral,
     ComparisonOp,
     If,
@@ -33,7 +34,7 @@ class Interpreter:
         method_name = "visit_" + type(node).__name__
         visitor = getattr(self, method_name, self.no_visit_method)
         return visitor(node)
-    
+
     def no_visit_method(self, node: Node) -> None:
         raise Exception(f"No visit_{type(node).__name__} method defined")
 
@@ -114,10 +115,10 @@ class Interpreter:
             return left_value <= right_value
         else:
             raise Exception(f"Unsupported comparison operator: {node.operator.type}")
-        
+
     def visit_ArrayLiteral(self, node: ArrayLiteral) -> list:
         return [self.visit(element) for element in node.elements]
-    
+
     def visit_ArrayIndex(self, node: ArrayIndex) -> Any:
         array_val = self.visit(node.array)
         index_val = self.visit(node.index)
@@ -128,9 +129,19 @@ class Interpreter:
 
         if not isinstance(array_val, list):
             raise TypeError("Attempting to index a non-array type.")
-        
+
         return array_val[index_val]
-    
+
+    def visit_ArrayIndexAssignment(self, node: ArrayIndexAssignment) -> None:
+        array_val = self.visit(node.array)
+        index_val = self.visit(node.index)
+
+        if not isinstance(index_val, int):
+            raise TypeError(f"Index has to be int. Index type was {type(index_val)}.")
+
+        value_val = self.visit(node.value)
+        array_val[index_val] = value_val
+
     def visit_WhileLoop(self, node: WhileLoop) -> None:
         while True:
             condition_result = self.visit(node.condition)
@@ -138,7 +149,7 @@ class Interpreter:
                 condition_eval = self.visit_ComparisonOp(node.condition)
             else:
                 condition_eval = condition_result
-                
+
             if not condition_eval:
                 break
 
