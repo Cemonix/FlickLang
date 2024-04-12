@@ -116,7 +116,7 @@ class Parser:
             unary_minus_count += 1
 
         if self.current_token.type == Fundamental.NUMBER:
-            node = Number(self.current_token, self.current_token.value)
+            node = Number(self.current_token.value)
             self.eat(Fundamental.NUMBER)
         elif self.current_token.type == Symbol.LPAREN:
             self.eat(Symbol.LPAREN)
@@ -133,7 +133,7 @@ class Parser:
             node = Variable(self.current_token.value)
             self.eat(Fundamental.IDENTIFIER)
         elif self.current_token.type == Fundamental.STRING:
-            node = String(self.current_token, self.current_token.value)
+            node = String(self.current_token.value)
             self.eat(Fundamental.STRING)
         else:
             raise Exception(f"Unexpected token: {self.current_token.type}")

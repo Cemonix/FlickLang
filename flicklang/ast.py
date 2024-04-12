@@ -16,12 +16,7 @@ class Program(Node):
 
 @dataclass
 class Number(Node):
-    token: Token
     value: str
-
-    def __post_init__(self):
-        if not self.token.value:
-            raise ValueError("Number token has no value.")
 
 
 @dataclass
@@ -55,7 +50,6 @@ class Print(Node):
 
 @dataclass
 class String(Node):
-    token: Token
     value: str
 
 
