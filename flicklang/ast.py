@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from flicklang.models import Token
 
@@ -14,8 +14,8 @@ class Program(Node):
 
     def __repr__(self) -> str:
         return f"Program({self.statements})"
-    
-    
+
+
 class Number(Node):
     def __init__(self, token: Token) -> None:
         if not token.value:
@@ -81,3 +81,22 @@ class String(Node):
 
     def __repr__(self) -> str:
         return f'String("{self.value}")'
+
+
+class If(Node):
+    def __init__(
+        self,
+        condition: Node,
+        true_branch: List[Node],
+        false_branch: Optional["If" | List[Node]] = None,
+    ) -> None:
+        self.condition = condition
+        self.true_branch = true_branch
+        self.false_branch = false_branch
+
+
+class ComparisonOp(Node):
+    def __init__(self, left: Node, operator: Token, right: Node) -> None:
+        self.left = left
+        self.operator = operator
+        self.right = right

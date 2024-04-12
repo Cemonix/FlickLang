@@ -2,6 +2,8 @@ from typing import List
 
 from flicklang.ast import (
     Assignment,
+    ComparisonOp,
+    If,
     Node,
     Number,
     BinaryOp,
@@ -24,25 +26,37 @@ class Parser:
     def parse(self) -> Program:
         statements: List[Node] = []
 
-        while not isinstance(self.current_token, EOFToken) and self.current_token is not None:
-            if (
-                self.current_token.type == TokenType.IDENTIFIER
-                and self.peek_token().type == TokenType.ASSIGN
-            ):
-                variable_token = self.current_token
-                self.eat(TokenType.IDENTIFIER)
-                self.eat(TokenType.ASSIGN)
-                assignment = Assignment(
-                    variable_name=Variable(variable_token), variable_value=self.expr()
-                )
-                statements.append(assignment)
-            elif self.current_token.type == TokenType.PRINT:
-                statements.append(self.parse_print_statement())
-            else:
-                expr = self.expr()
-                statements.append(Print(expr))
+        while (
+            not isinstance(self.current_token, EOFToken)
+            and self.current_token is not None
+        ):
+            statement = self.parse_statement()
+            if statement is not None:
+                statements.append(statement)
 
         return Program(statements)
+
+    def parse_statement(self) -> Node:
+        if self.current_token is None:
+            raise Exception("Current token is None")
+
+        if (
+            self.current_token.type == TokenType.IDENTIFIER
+            and self.peek_token().type == TokenType.ASSIGN
+        ):
+            variable_token = self.current_token
+            self.eat(TokenType.IDENTIFIER)
+            self.eat(TokenType.ASSIGN)
+            assignment = Assignment(
+                variable_name=Variable(variable_token), variable_value=self.expr()
+            )
+            return assignment
+        elif self.current_token.type == TokenType.PRINT:
+            return self.parse_print_statement()
+        elif self.current_token.type == TokenType.IF:
+            return self.parse_if_statement()
+        else:
+            return Print(self.expr())
 
     def eat(self, token_type: TokenType) -> None:
         if self.current_token is None:
@@ -136,3 +150,52 @@ class Parser:
         self.eat(TokenType.PRINT)
         expr = self.expr()
         return Print(expr)
+
+    def parse_comparison(self) -> Node:
+        if self.current_token is None:
+            raise Exception("Current token is None")
+
+        node = self.expr()
+
+        while self.current_token.type in (
+            TokenType.EQ,
+            TokenType.NEQ,
+            TokenType.GR,
+            TokenType.GRE,
+            TokenType.LS,
+            TokenType.LSE,
+        ):
+            token = self.current_token
+            self.eat(token.type)
+            node = ComparisonOp(left=node, operator=token, right=self.expr())
+
+        return node
+
+    def parse_if_statement(self) -> If:
+        if self.current_token is None:
+            raise Exception("Current token is None")
+
+        self.eat(TokenType.IF) if self.current_token.type == TokenType.IF else self.eat(TokenType.ELI)
+        condition = self.parse_comparison()
+
+        true_block = self.parse_block()
+
+        false_block = None
+        if self.current_token.type == TokenType.ELI:
+            false_block = self.parse_if_statement()
+        elif self.current_token.type == TokenType.EL:
+            self.eat(TokenType.EL)
+            false_block = self.parse_block()
+
+        return If(condition, true_block, false_block)
+
+    def parse_block(self) -> List[Node]:
+        if self.current_token is None:
+            raise Exception("Current token is None")
+
+        statements = []
+        self.eat(TokenType.BLOCK_START)
+        while not self.current_token.type in (TokenType.BLOCK_END, TokenType.EOF):
+            statements.append(self.parse_statement())
+        self.eat(TokenType.BLOCK_END)
+        return statements

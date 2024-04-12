@@ -1,6 +1,19 @@
-from flicklang.ast import Node, Number, BinaryOp, Program, String, UnaryOp, Variable, Assignment, Print
+from flicklang.ast import (
+    ComparisonOp,
+    If,
+    Node,
+    Number,
+    BinaryOp,
+    Program,
+    String,
+    UnaryOp,
+    Variable,
+    Assignment,
+    Print,
+)
 from flicklang.models import TokenType
 from typing import Dict, Any, cast
+
 
 class Interpreter:
     def __init__(self) -> None:
@@ -12,7 +25,7 @@ class Interpreter:
                 self.interpret(statement)
         else:
             # Dispatch to the specific visitor method based on the node type
-            method_name = 'visit_' + type(node).__name__
+            method_name = "visit_" + type(node).__name__
             visitor = getattr(self, method_name, self.no_visit_method)
             return visitor(node)
 
@@ -21,7 +34,7 @@ class Interpreter:
 
     def visit_Number(self, node: Number) -> int | float:
         try:
-           return float(node.value) if '.' in node.value else int(node.value)
+            return float(node.value) if "." in node.value else int(node.value)
         except:
             raise ValueError(f"Failed to convert '{node.value}' to a numeric type.")
 
@@ -53,7 +66,7 @@ class Interpreter:
 
     def visit_String(self, node: String) -> str:
         return node.value
-    
+
     def visit_Assignment(self, node: Assignment) -> None:
         var_name = cast(Variable, node.variable_name)
         value = self.interpret(node.variable_value)
@@ -62,3 +75,35 @@ class Interpreter:
     def visit_Print(self, node: Print) -> None:
         value = self.interpret(node.expr)
         print(value)
+
+    def visit_If(self, node: If) -> Any:
+        condition_result = self.interpret(node.condition)
+
+        if condition_result:
+            for statement in node.true_branch:
+                self.interpret(statement)
+        elif node.false_branch:
+            if isinstance(node.false_branch, If):
+                self.interpret(node.false_branch)
+            else:
+                for statement in node.false_branch:
+                    self.interpret(statement)
+
+    def visit_ComparisonOp(self, node: ComparisonOp) -> bool:
+        left_value = self.interpret(node.left)
+        right_value = self.interpret(node.right)
+
+        if node.operator.type == TokenType.EQ:
+            return left_value == right_value
+        elif node.operator.type == TokenType.NEQ:
+            return left_value != right_value
+        elif node.operator.type == TokenType.GR:
+            return left_value > right_value
+        elif node.operator.type == TokenType.GRE:
+            return left_value >= right_value
+        elif node.operator.type == TokenType.LS:
+            return left_value < right_value
+        elif node.operator.type == TokenType.LSE:
+            return left_value <= right_value
+        else:
+            raise Exception(f"Unsupported comparison operator: {node.operator.type}")

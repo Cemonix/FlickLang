@@ -14,7 +14,17 @@ class TokenType(Enum):
     LPAREN = "("
     RPAREN = ")"
     PRINT = "p"
-
+    BLOCK_START = '{'
+    BLOCK_END = '}'
+    IF = 'if'
+    ELI = 'elif'
+    EL = 'else'
+    EQ = 'eq'
+    NEQ = 'neq'
+    GR = 'gr'
+    LS = 'ls'
+    GRE = 'gre'
+    LSE = 'lse'
 
 class Token:
     def __init__(self, type: TokenType, value: str) -> None:
