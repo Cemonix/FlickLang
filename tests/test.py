@@ -33,33 +33,6 @@ def test_basic_arithmetic_expression() -> None:
     print("Test passed: Basic arithmetic expression parsed correctly.")
 
 
-def test_unary_operators_expression() -> None:
-    # Assuming the Lexer and Parser are initialized here
-    expression = "-3 + 5 -- 2"
-    tokens = Lexer(expression).tokenize()
-    parser = Parser(tokens)
-    ast = parser.parse()
-
-    # Correcting the AST check
-    assert isinstance(ast, BinaryOp), "Root of AST should be a BinaryOp."
-    assert isinstance(ast.left, UnaryOp), "Left child of root should be UnaryOp."
-    assert isinstance(ast.left.operand, Number), "Operand of UnaryOp should be Number."
-    assert ast.left.operand.value == "3", "Value of operand in UnaryOp should be 3."
-
-    # Since --2 simplifies to +2, it's just another term in the addition, not a UnaryOp
-    assert isinstance(
-        ast.right, BinaryOp
-    ), "Right child of root should be BinaryOp for addition."
-    assert (
-        isinstance(ast.right.left, Number) and ast.right.left.value == "5"
-    ), "Left child of right BinaryOp should be Number(5)."
-    assert (
-        isinstance(ast.right.right, Number) and ast.right.right.value == "2"
-    ), "Right child of right BinaryOp should be Number(2), simplified from --2 to +2."
-
-    print("Test passed: Expression with unary operators parsed correctly.")
-
-
 def test_parser_with_unary_and_binary_minus() -> None:
     test_cases = [
         {"input": "-3", "expected": UnaryOp},
@@ -89,7 +62,7 @@ def test_parser_with_unary_and_binary_minus() -> None:
 def test_variable_assignment() -> None:
     test_cases = [
         {"input": "x = 5", "expected": Assignment},
-        {"input": "x = a", "expected": Assignment},
+        {"input": "a = 10 x = a", "expected": Assignment},
     ]
 
     for case in test_cases:

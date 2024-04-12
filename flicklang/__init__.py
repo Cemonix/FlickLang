@@ -5,12 +5,21 @@ from flicklang.interpreter import Interpreter
 # TODO: Get program as argument
 # Example FlickLang program
 source_code = """
-p 5 + 2 * 3
-x = 10
-a=10 b=10 c=10
-b = 5.5
+a = 10 b = 5
+p a
 p b
-.. d = c 
+if a eq b
+{
+    p 'a is equal to b'
+}
+eli a gr b
+{
+    p 'a is greater then b'
+}
+el
+{
+    p 'a is not equal to b'
+}
 """
 
 
@@ -23,6 +32,7 @@ def run_flicklang_program(source_code: str) -> None:
 
     interpreter = Interpreter()
     interpreter.interpret(program)
+
 
 if __name__ == "__main__":
     run_flicklang_program(source_code)
