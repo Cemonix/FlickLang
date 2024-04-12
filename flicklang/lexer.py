@@ -20,12 +20,6 @@ class Lexer:
     def tokenize(self) -> List[Token]:
         tokens = []
         while self.pos < len(self.text):
-            token = self.get_next_token()
-            tokens.append(token)
-        return tokens
-
-    def get_next_token(self) -> Token | EOFToken:
-        while self.pos < len(self.text):
             if self.text[self.pos].isspace():
                 self.pos += 1
                 continue
@@ -38,77 +32,82 @@ class Lexer:
                 continue
 
             if self.pos >= len(self.text):
-                return EOFToken(Fundamental.EOF)
-
-            current_char = self.text[self.pos]
-
-            if current_char == "'":
-                return self.tokenize_string()
-
-            elif current_char == "+":
-                self.pos += 1
-                return Token(Operator.PLUS, "+")
-
-            elif current_char == "-":
-                self.pos += 1
-                return Token(Operator.MINUS, "-")
-
-            elif current_char == "*":
-                self.pos += 1
-                return Token(Operator.MULTIPLY, "*")
-
-            elif current_char == "/":
-                self.pos += 1
-                return Token(Operator.DIVIDE, "/")
+                break
             
-            elif current_char == "%":
-                self.pos += 1
-                return Token(Operator.MODULO, "%")
-
-            elif current_char == "=":
-                self.pos += 1
-                return Token(Operator.ASSIGN, "=")
-
-            elif current_char == "(":
-                self.pos += 1
-                return Token(Symbol.LPAREN, "(")
-
-            elif current_char == ")":
-                self.pos += 1
-                return Token(Symbol.RPAREN, ")")
-
-            elif current_char == "{":
-                self.pos += 1
-                return Token(Symbol.BLOCK_START, "{")
-
-            elif current_char == "}":
-                self.pos += 1
-                return Token(Symbol.BLOCK_END, "}")
+            token = self.get_next_token()
+            tokens.append(token)
             
-            elif current_char == "[":
-                self.pos += 1
-                return Token(Symbol.LBRACKET, "[")
+        tokens.append(EOFToken(Fundamental.EOF))
+        return tokens
 
-            elif current_char == "]":
-                self.pos += 1
-                return Token(Symbol.RBRACKET, "]")
-            
-            elif current_char == ",":
-                self.pos += 1
-                return Token(Symbol.COMMA, ",")
+    def get_next_token(self) -> Token | EOFToken:
+        current_char = self.text[self.pos]
 
-            elif current_char.isdigit():
-                return self.tokenize_number()
+        if current_char == "'":
+            return self.tokenize_string()
 
-            elif current_char.isalpha() or current_char == "_":
-                return self.tokenize_syntax()
+        elif current_char == "+":
+            self.pos += 1
+            return Token(Operator.PLUS, "+")
 
-            else:
-                raise TokenizationError(
-                    f"Unrecognized character '{current_char}'", self.pos
-                )
+        elif current_char == "-":
+            self.pos += 1
+            return Token(Operator.MINUS, "-")
 
-        return EOFToken(Fundamental.EOF)
+        elif current_char == "*":
+            self.pos += 1
+            return Token(Operator.MULTIPLY, "*")
+
+        elif current_char == "/":
+            self.pos += 1
+            return Token(Operator.DIVIDE, "/")
+        
+        elif current_char == "%":
+            self.pos += 1
+            return Token(Operator.MODULO, "%")
+
+        elif current_char == "=":
+            self.pos += 1
+            return Token(Operator.ASSIGN, "=")
+
+        elif current_char == "(":
+            self.pos += 1
+            return Token(Symbol.LPAREN, "(")
+
+        elif current_char == ")":
+            self.pos += 1
+            return Token(Symbol.RPAREN, ")")
+
+        elif current_char == "{":
+            self.pos += 1
+            return Token(Symbol.BLOCK_START, "{")
+
+        elif current_char == "}":
+            self.pos += 1
+            return Token(Symbol.BLOCK_END, "}")
+        
+        elif current_char == "[":
+            self.pos += 1
+            return Token(Symbol.LBRACKET, "[")
+
+        elif current_char == "]":
+            self.pos += 1
+            return Token(Symbol.RBRACKET, "]")
+        
+        elif current_char == ",":
+            self.pos += 1
+            return Token(Symbol.COMMA, ",")
+
+        elif current_char.isdigit():
+            return self.tokenize_number()
+
+        elif current_char.isalpha() or current_char == "_":
+            return self.tokenize_syntax()
+
+        else:
+            raise TokenizationError(
+                f"Unrecognized character '{current_char}'", self.pos
+            )
 
     def skip_comment(self) -> None:
         while self.pos < len(self.text) and self.text[self.pos] != "\n":
