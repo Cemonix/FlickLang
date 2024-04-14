@@ -39,6 +39,13 @@ class Assignment(Node):
 
 
 @dataclass
+class CompoundAssignment(Node):
+    variable_name: Node
+    op_token: Token
+    variable_value: Node
+
+
+@dataclass
 class Variable(Node):
     name: str
 

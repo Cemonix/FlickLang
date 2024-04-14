@@ -19,6 +19,13 @@ class Operator(Enum):
     DIVIDE = "/"
     MODULO = "%"
 
+class CompoundOperator(Enum):
+    PLUS_ASSIGN = "+="
+    MINUS_ASSIGN = "-="
+    MULTIPLY_ASSIGN = "*="
+    DIVIDE_ASSIGN = "/="
+    MODULO_ASSIGN = "%="
+
 
 class Symbol(Enum):
     LPAREN = "("
@@ -46,8 +53,12 @@ class Fundamental(Enum):
     EOF = "eof"
 
 
-SyntaxTokenType = Union[Keyword, Fundamental, Operator, Symbol, Comparison]
-
+SyntaxTokenType = Union[Keyword, Fundamental, Operator, Symbol, Comparison, CompoundOperator]
+operators = {item: item.value for item in Operator}
+symbols = {item: item.value for item in Symbol}
+keywords = {item: item.value for item in Keyword}
+comparisons = {item: item.value for item in Comparison}
+compound_operators = {item: item.value for item in CompoundOperator}
 
 @dataclass
 class Token:

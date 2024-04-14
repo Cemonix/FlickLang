@@ -6,6 +6,7 @@ from flicklang.ast import (
     ArrayLiteral,
     Assignment,
     ComparisonOp,
+    CompoundAssignment,
     If,
     Node,
     Number,
@@ -26,13 +27,12 @@ from flicklang.models import (
     Symbol,
     Fundamental,
     Operator,
-    Comparison,
+    comparisons,
+    compound_operators
 )
 
 
 class Parser:
-    comparison_types = {item for item in Comparison}
-
     def __init__(self, tokens: List[Token]) -> None:
         self.tokens = tokens
         self.current_token: Token | EOFToken = EOFToken(Fundamental.EOF)
@@ -106,6 +106,8 @@ class Parser:
         Handles statements that start with an identifier which could be an assignment or array access.
         """
         next_token = self.peek_token()
+        if next_token.type in compound_operators:
+            return self.parse_compound_assignment()
         if next_token.type == Operator.ASSIGN:
             return self.parse_assignment()
         elif next_token.type == Symbol.LBRACKET:
@@ -195,6 +197,28 @@ class Parser:
             variable_value=self.expression(),
         )
     
+    def parse_compound_assignment(self) -> Node:
+        if isinstance(self.current_token, EOFToken):
+            raise ParsingError(
+                "Unexpected EOF while parsing if statement.", self.current_token
+            )
+        
+        variable_name_token = self.current_token
+        self.eat(Fundamental.IDENTIFIER)
+        
+        operator_token = self.current_token
+        if operator_token.type not in compound_operators:
+            raise ParsingError("Expected compound operator after identifier.", operator_token)
+        
+        self.eat(operator_token.type)
+        right_expression = self.expression()
+
+        return CompoundAssignment(
+            variable_name=Variable(variable_name_token.value),
+            op_token=operator_token,
+            variable_value=right_expression
+        )
+    
     def parse_comparison(self) -> Node:
         if isinstance(self.current_token, EOFToken):
             raise ParsingError(
@@ -203,7 +227,7 @@ class Parser:
 
         node = self.expression()
 
-        while self.current_token.type in Parser.comparison_types:
+        while self.current_token.type in comparisons:
             token = self.current_token
             self.eat(token.type)
             node = ComparisonOp(left=node, operator=token, right=self.expression())

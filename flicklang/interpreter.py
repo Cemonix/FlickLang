@@ -3,6 +3,7 @@ from flicklang.ast import (
     ArrayIndexAssignment,
     ArrayLiteral,
     ComparisonOp,
+    CompoundAssignment,
     If,
     Node,
     Number,
@@ -16,7 +17,7 @@ from flicklang.ast import (
     WhileLoop,
 )
 from flicklang.exceptions import ExecutionError
-from flicklang.models import Operator, Comparison
+from flicklang.models import CompoundOperator, Operator, Comparison
 from typing import Dict, Any, cast
 
 
@@ -125,6 +126,33 @@ class Interpreter:
         variable = cast(Variable, node.variable_name)
         value = self.visit(node.variable_value)
         self.environment[variable.name] = value
+
+    def visit_CompoundAssignment(self, node: CompoundAssignment) -> None:
+        variable_name = cast(Variable, node.variable_name)
+        if variable_name.name not in self.environment:
+            raise ExecutionError(f"Undefined variable: '{variable_name}'")
+
+        current_value = self.environment[variable_name.name]
+        new_value = self.visit(node.variable_value)
+
+        if node.op_token.type == CompoundOperator.PLUS_ASSIGN:
+            updated_value = current_value + new_value
+        elif node.op_token.type == CompoundOperator.MINUS_ASSIGN:
+            updated_value = current_value - new_value
+        elif node.op_token.type == CompoundOperator.MULTIPLY_ASSIGN:
+            updated_value = current_value * new_value
+        elif node.op_token.type == CompoundOperator.DIVIDE_ASSIGN:
+            if new_value == 0:
+                raise ExecutionError("Division by zero in compound assignment.")
+            updated_value = current_value / new_value
+        elif node.op_token.type == CompoundOperator.MODULO_ASSIGN:
+            if new_value == 0:
+                raise ExecutionError("Modulo by zero in compound assignment.")
+            updated_value = current_value % new_value
+        else:
+            raise ExecutionError(f"Unsupported compound operator: {node.op_token.type}")
+
+        self.environment[variable_name.name] = updated_value
 
     def visit_Print(self, node: Print) -> None:
         output = ' '.join(str(self.visit(expr)) for expr in node.expressions)

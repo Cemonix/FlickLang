@@ -3,23 +3,24 @@ from typing import List
 
 from flicklang.exceptions import TokenizationError
 from flicklang.models import (
+    CompoundOperator,
+    SyntaxTokenType,
     Comparison,
     Keyword,
-    SyntaxTokenType,
     Token,
     EOFToken,
     Operator,
     Symbol,
     Fundamental,
+    operators,
+    symbols,
+    comparisons,
+    keywords,
+    compound_operators
 )
 
 
 class Lexer:
-    operators = set(op.value for op in Operator)
-    symbols = set(sym.value for sym in Symbol)
-    keywords_set = {item.value: item for item in Keyword}
-    comparisons_set = {item.value: item for item in Comparison}
-
     def __init__(self, text: str) -> None:
         self.text = text
         self.pos = 0
@@ -49,10 +50,17 @@ class Lexer:
         
     def get_next_token(self) -> Token | EOFToken:
         current_char = self.text[self.pos]
-        if current_char in Lexer.operators:
+        
+        if (
+            self.pos + 1 < len(self.text)
+            and (current_chars := self.text[self.pos : self.pos + 2]) in compound_operators.values()
+        ):
+            self.pos += 2
+            return Token(CompoundOperator(current_chars), current_chars)
+        elif current_char in operators.values():
             self.pos += 1
             return Token(Operator(current_char), current_char)
-        elif current_char in Lexer.symbols:
+        elif current_char in symbols.values():
             self.pos += 1
             return Token(Symbol(current_char), current_char)
         elif current_char == "'":
@@ -112,10 +120,10 @@ class Lexer:
         return Token(token_type, ident_str)
     
     def determine_token_type(self, ident_str: str) -> SyntaxTokenType:
-        if ident_str in Lexer.keywords_set:
+        if ident_str in keywords.values():
             return Keyword[ident_str.upper()]
         
-        if ident_str in Lexer.comparisons_set:
+        if ident_str in comparisons.values():
             return Comparison[ident_str.upper()]
 
         return Fundamental.IDENTIFIER

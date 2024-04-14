@@ -3,6 +3,7 @@ import pytest
 from flicklang.parser import Parser
 from flicklang.models import (
     Comparison,
+    CompoundOperator,
     Keyword,
     Token,
     Fundamental,
@@ -10,7 +11,16 @@ from flicklang.models import (
     Symbol,
     EOFToken,
 )
-from flicklang.ast import If, Program, Number, BinaryOp, Assignment, Variable, WhileLoop
+from flicklang.ast import (
+    CompoundAssignment,
+    If,
+    Program,
+    Number,
+    BinaryOp,
+    Assignment,
+    Variable,
+    WhileLoop,
+)
 
 
 def test_parse_number() -> None:
@@ -158,3 +168,34 @@ def test_complex_conditionals() -> None:
         assert (
             False
         ), "The false branch of the 'elif' should be a list of Nodes or None if there's no 'else'"
+
+
+def test_parse_compound_assignments() -> None:
+    tokens = [
+        Token(Fundamental.IDENTIFIER, "x"),
+        Token(CompoundOperator.PLUS_ASSIGN, "+="),
+        Token(Fundamental.NUMBER, "5"),
+        EOFToken(Fundamental.EOF),
+    ]
+    parser = Parser(tokens)
+    result = parser.parse()
+
+    assert isinstance(result, Program), "The result should be a Program node."
+    assert isinstance(
+        result.statements[0], CompoundAssignment
+    ), "The first statement should be a CompoundAssignment."
+    assert (
+        result.statements[0].op_token.type == CompoundOperator.PLUS_ASSIGN
+    ), "Operator token type mismatch."
+    assert isinstance(
+        result.statements[0].variable_name, Variable
+    ), "The variable_name attribute of the CompoundAssignment should be an instance of Variable."
+    assert (
+        result.statements[0].variable_name.name == "x"
+    ), f"Expected the variable name to be 'x', but got {result.statements[0].variable_name.name}."
+    assert isinstance(
+        result.statements[0].variable_value, Number
+    ), "The variable_value attribute of the CompoundAssignment should be an instance of Number."
+    assert (
+        result.statements[0].variable_value.value == "5"
+    ), f"Expected the variable value to be '5', but got {result.statements[0].variable_value.value}."

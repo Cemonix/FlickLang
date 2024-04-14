@@ -2,7 +2,16 @@ import pytest
 
 from flicklang.exceptions import TokenizationError
 from flicklang.lexer import Lexer
-from flicklang.models import Comparison, EOFToken, Keyword, Token, Fundamental, Operator, Symbol
+from flicklang.models import (
+    Comparison,
+    CompoundOperator,
+    EOFToken,
+    Keyword,
+    Token,
+    Fundamental,
+    Operator,
+    Symbol,
+)
 
 
 def test_tokenize_numbers() -> None:
@@ -11,7 +20,7 @@ def test_tokenize_numbers() -> None:
     assert tokens == [
         Token(Fundamental.NUMBER, "123"),
         Token(Fundamental.NUMBER, "456.789"),
-        EOFToken(Fundamental.EOF)
+        EOFToken(Fundamental.EOF),
     ]
 
 
@@ -24,7 +33,7 @@ def test_tokenize_operators() -> None:
         Token(Operator.MULTIPLY, "*"),
         Token(Operator.DIVIDE, "/"),
         Token(Operator.MODULO, "%"),
-        EOFToken(Fundamental.EOF)
+        EOFToken(Fundamental.EOF),
     ]
     assert tokens == expected
 
@@ -32,10 +41,7 @@ def test_tokenize_operators() -> None:
 def test_skip_comments() -> None:
     lexer = Lexer(".. This is a comment\n123")
     tokens = lexer.tokenize()
-    assert tokens == [
-        Token(Fundamental.NUMBER, "123"),
-        EOFToken(Fundamental.EOF)
-    ]
+    assert tokens == [Token(Fundamental.NUMBER, "123"), EOFToken(Fundamental.EOF)]
 
 
 def test_tokenize_strings() -> None:
@@ -44,7 +50,7 @@ def test_tokenize_strings() -> None:
     assert tokens == [
         Token(Fundamental.STRING, "hello"),
         Token(Fundamental.STRING, "world"),
-        EOFToken(Fundamental.EOF)
+        EOFToken(Fundamental.EOF),
     ]
 
 
@@ -67,9 +73,10 @@ def test_complex_arithmetic_expression() -> None:
         Token(Operator.PLUS, "+"),
         Token(Fundamental.NUMBER, "5"),
         Token(Symbol.RPAREN, ")"),
-        EOFToken(Fundamental.EOF)
+        EOFToken(Fundamental.EOF),
     ]
     assert tokens == expected
+
 
 def test_complex_expression() -> None:
     lexer = Lexer("varName = 3 * (4 + 5) if varName gr 13 {p 'hello'}")
@@ -90,8 +97,22 @@ def test_complex_expression() -> None:
         Token(Fundamental.NUMBER, "13"),
         Token(Symbol.BLOCK_START, "{"),
         Token(Keyword.P, "p"),
-        Token(Fundamental.STRING, 'hello'),
+        Token(Fundamental.STRING, "hello"),
         Token(Symbol.BLOCK_END, "}"),
-        EOFToken(Fundamental.EOF)
+        EOFToken(Fundamental.EOF),
     ]
     assert tokens == expected
+
+
+def test_tokenize_compound_operators() -> None:
+    lexer = Lexer("+= -= *= /= %=")
+    tokens = lexer.tokenize()
+    expected = [
+        Token(CompoundOperator.PLUS_ASSIGN, "+="),
+        Token(CompoundOperator.MINUS_ASSIGN, "-="),
+        Token(CompoundOperator.MULTIPLY_ASSIGN, "*="),
+        Token(CompoundOperator.DIVIDE_ASSIGN, "/="),
+        Token(CompoundOperator.MODULO_ASSIGN, "%="),
+        EOFToken(Fundamental.EOF),
+    ]
+    assert tokens == expected, "Compound operators were not tokenized correctly."
