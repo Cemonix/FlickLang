@@ -1,8 +1,10 @@
+from lib2to3.pygram import Symbols
 from typing import List
 
 from flicklang.exceptions import TokenizationError
 from flicklang.models import (
-    SyntaxToken,
+    Comparison,
+    Keyword,
     SyntaxTokenType,
     Token,
     EOFToken,
@@ -13,6 +15,11 @@ from flicklang.models import (
 
 
 class Lexer:
+    operators = set(op.value for op in Operator)
+    symbols = set(sym.value for sym in Symbol)
+    keywords_set = {item.value: item for item in Keyword}
+    comparisons_set = {item.value: item for item in Comparison}
+
     def __init__(self, text: str) -> None:
         self.text = text
         self.pos = 0
@@ -39,76 +46,24 @@ class Lexer:
             
         tokens.append(EOFToken(Fundamental.EOF))
         return tokens
-
+        
     def get_next_token(self) -> Token | EOFToken:
         current_char = self.text[self.pos]
-
-        if current_char == "'":
+        if current_char in Lexer.operators:
+            self.pos += 1
+            return Token(Operator(current_char), current_char)
+        elif current_char in Lexer.symbols:
+            self.pos += 1
+            return Token(Symbol(current_char), current_char)
+        elif current_char == "'":
             return self.tokenize_string()
-
-        elif current_char == "+":
-            self.pos += 1
-            return Token(Operator.PLUS, "+")
-
-        elif current_char == "-":
-            self.pos += 1
-            return Token(Operator.MINUS, "-")
-
-        elif current_char == "*":
-            self.pos += 1
-            return Token(Operator.MULTIPLY, "*")
-
-        elif current_char == "/":
-            self.pos += 1
-            return Token(Operator.DIVIDE, "/")
-        
-        elif current_char == "%":
-            self.pos += 1
-            return Token(Operator.MODULO, "%")
-
-        elif current_char == "=":
-            self.pos += 1
-            return Token(Operator.ASSIGN, "=")
-
-        elif current_char == "(":
-            self.pos += 1
-            return Token(Symbol.LPAREN, "(")
-
-        elif current_char == ")":
-            self.pos += 1
-            return Token(Symbol.RPAREN, ")")
-
-        elif current_char == "{":
-            self.pos += 1
-            return Token(Symbol.BLOCK_START, "{")
-
-        elif current_char == "}":
-            self.pos += 1
-            return Token(Symbol.BLOCK_END, "}")
-        
-        elif current_char == "[":
-            self.pos += 1
-            return Token(Symbol.LBRACKET, "[")
-
-        elif current_char == "]":
-            self.pos += 1
-            return Token(Symbol.RBRACKET, "]")
-        
-        elif current_char == ",":
-            self.pos += 1
-            return Token(Symbol.COMMA, ",")
-
         elif current_char.isdigit():
             return self.tokenize_number()
-
         elif current_char.isalpha() or current_char == "_":
             return self.tokenize_syntax()
-
         else:
-            raise TokenizationError(
-                f"Unrecognized character '{current_char}'", self.pos
-            )
-
+            raise TokenizationError(f"Unrecognized character '{current_char}'", self.pos)
+   
     def skip_comment(self) -> None:
         while self.pos < len(self.text) and self.text[self.pos] != "\n":
             self.pos += 1
@@ -155,10 +110,12 @@ class Lexer:
         ident_str = self.text[start_pos : self.pos]
         token_type = self.determine_token_type(ident_str)
         return Token(token_type, ident_str)
-
+    
     def determine_token_type(self, ident_str: str) -> SyntaxTokenType:
-        for enum in SyntaxToken:
-            for member in enum:
-                if member.value == ident_str:
-                    return member
+        if ident_str in Lexer.keywords_set:
+            return Keyword[ident_str.upper()]
+        
+        if ident_str in Lexer.comparisons_set:
+            return Comparison[ident_str.upper()]
+
         return Fundamental.IDENTIFIER

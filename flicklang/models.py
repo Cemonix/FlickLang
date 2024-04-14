@@ -47,7 +47,6 @@ class Fundamental(Enum):
 
 
 SyntaxTokenType = Union[Keyword, Fundamental, Operator, Symbol, Comparison]
-SyntaxToken = [Keyword, Operator, Symbol, Comparison, Fundamental]
 
 
 @dataclass

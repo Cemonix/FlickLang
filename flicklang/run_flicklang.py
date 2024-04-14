@@ -1,5 +1,6 @@
 import argparse
 
+from flicklang.exceptions import ExecutionError
 from flicklang.lexer import Lexer
 from flicklang.parser import Parser
 from flicklang.interpreter import Interpreter
@@ -46,6 +47,8 @@ def main() -> None:
                 run_flicklang_program(source_code)
         except FileNotFoundError:
             print(f"Error: The file '{file_path}' was not found.")
+        except ExecutionError as e:
+            print(f"Runtime error encountered: {e}")
         except Exception as e:
             print(f"An error occurred: {e}")
     else:
@@ -58,6 +61,8 @@ def main() -> None:
                     print("Exiting FlickLang Interactive Mode.")
                     break
                 run_flicklang_program(source_code)
+            except ExecutionError as e:
+                print(f"Runtime error encountered: {e}")
             except Exception as e:
                 print(f"An error occurred: {e}")
 

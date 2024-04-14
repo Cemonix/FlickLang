@@ -2,7 +2,7 @@ import pytest
 
 from flicklang.exceptions import TokenizationError
 from flicklang.lexer import Lexer
-from flicklang.models import EOFToken, Token, Fundamental, Operator, Symbol
+from flicklang.models import Comparison, EOFToken, Keyword, Token, Fundamental, Operator, Symbol
 
 
 def test_tokenize_numbers() -> None:
@@ -54,7 +54,7 @@ def test_unterminated_string() -> None:
         lexer.tokenize()
 
 
-def test_complex_expression() -> None:
+def test_complex_arithmetic_expression() -> None:
     lexer = Lexer("varName = 3 * (4 + 5)")
     tokens = lexer.tokenize()
     expected = [
@@ -67,6 +67,31 @@ def test_complex_expression() -> None:
         Token(Operator.PLUS, "+"),
         Token(Fundamental.NUMBER, "5"),
         Token(Symbol.RPAREN, ")"),
+        EOFToken(Fundamental.EOF)
+    ]
+    assert tokens == expected
+
+def test_complex_expression() -> None:
+    lexer = Lexer("varName = 3 * (4 + 5) if varName gr 13 {p 'hello'}")
+    tokens = lexer.tokenize()
+    expected = [
+        Token(Fundamental.IDENTIFIER, "varName"),
+        Token(Operator.ASSIGN, "="),
+        Token(Fundamental.NUMBER, "3"),
+        Token(Operator.MULTIPLY, "*"),
+        Token(Symbol.LPAREN, "("),
+        Token(Fundamental.NUMBER, "4"),
+        Token(Operator.PLUS, "+"),
+        Token(Fundamental.NUMBER, "5"),
+        Token(Symbol.RPAREN, ")"),
+        Token(Keyword.IF, "if"),
+        Token(Fundamental.IDENTIFIER, "varName"),
+        Token(Comparison.GR, "gr"),
+        Token(Fundamental.NUMBER, "13"),
+        Token(Symbol.BLOCK_START, "{"),
+        Token(Keyword.P, "p"),
+        Token(Fundamental.STRING, 'hello'),
+        Token(Symbol.BLOCK_END, "}"),
         EOFToken(Fundamental.EOF)
     ]
     assert tokens == expected
