@@ -61,10 +61,15 @@ class String(Node):
 
 
 @dataclass
+class Block(Node):
+    statements: List[Node]
+
+
+@dataclass
 class If(Node):
     condition: Node
-    true_branch: List[Node]
-    false_branch: Optional[Union["If", List[Node]]] = None
+    true_branch: Block
+    false_branch: Optional[Union["If", Block]] = None
 
 
 @dataclass
@@ -95,4 +100,22 @@ class ArrayIndexAssignment(Node):
 @dataclass
 class WhileLoop(Node):
     condition: Node
-    body: List[Node]
+    body: Block
+
+
+@dataclass
+class FunctionDecleration(Node):
+    name: Token
+    parameters: List[Variable]
+    body: Block
+
+
+@dataclass
+class FunctionCall(Node):
+    function_name: str
+    parameters: List[Node]
+
+
+@dataclass
+class Return(Node):
+    expression: Node

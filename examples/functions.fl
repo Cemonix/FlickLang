@@ -1,0 +1,12 @@
+fu hello_world()
+{
+    p 'Hello world'
+}
+
+fu read_message(message)
+{
+    p message
+}
+
+hello_world()
+read_message('Hello from main environment')

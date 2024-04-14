@@ -116,3 +116,25 @@ def test_tokenize_compound_operators() -> None:
         EOFToken(Fundamental.EOF),
     ]
     assert tokens == expected, "Compound operators were not tokenized correctly."
+
+
+def test_function_lexing() -> None:
+    lexer = Lexer("fu myFunction(x, y) { ret x + y }")
+    tokens = lexer.tokenize()
+    expected = [
+        Token(Keyword.FU, "fu"),
+        Token(Fundamental.IDENTIFIER, "myFunction"),
+        Token(Symbol.LPAREN, "("),
+        Token(Fundamental.IDENTIFIER, "x"),
+        Token(Symbol.COMMA, ","),
+        Token(Fundamental.IDENTIFIER, "y"),
+        Token(Symbol.RPAREN, ")"),
+        Token(Symbol.BLOCK_START, "{"),
+        Token(Keyword.RET, "ret"),
+        Token(Fundamental.IDENTIFIER, "x"),
+        Token(Operator.PLUS, "+"),
+        Token(Fundamental.IDENTIFIER, "y"),
+        Token(Symbol.BLOCK_END, "}"),
+        EOFToken(Fundamental.EOF)
+    ]
+    assert tokens == expected, "Lexer failed to tokenize function declaration correctly."

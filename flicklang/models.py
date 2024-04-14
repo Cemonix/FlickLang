@@ -9,6 +9,8 @@ class Keyword(Enum):
     EL = "el"   # else
     W = "w"     # while loop
     P = "p"     # print
+    FU = "fu"
+    RET = "ret"
 
 
 class Operator(Enum):

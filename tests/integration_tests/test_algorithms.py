@@ -49,3 +49,15 @@ def test_bubble_sort() -> None:
     """
     expected_output = "3\n5\n7\n10\n"
     run_flicklang_test(source_code, expected_output)
+
+
+def test_integration_function_with_return() -> None:
+    source_code = """
+    fu compute(a, b) {
+        ret a * b - 2
+    }
+    result = compute(5, 6)
+    p result
+    """
+    expected_output = "28\n"
+    run_flicklang_test(source_code, expected_output)

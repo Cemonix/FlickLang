@@ -1,5 +1,7 @@
-from flicklang.models import EOFToken, Token
+from typing import Any
 
+from flicklang.models import EOFToken, Token
+        
 
 class FlickLangError(Exception):
     """Base class for errors in FlickLang."""
@@ -41,3 +43,10 @@ class ParsingError(FlickLangError):
 class ExecutionError(FlickLangError):
     def __str__(self) -> str:
         return f"ExecutionError: {self.message}"
+
+
+class ReturnSignal(FlickLangError):
+    """Exception used to signal a return from a function with a value."""
+    def __init__(self, value: Any) -> None:
+        super().__init__(str(value))
+        self.value = value

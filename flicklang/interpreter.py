@@ -2,8 +2,11 @@ from flicklang.ast import (
     ArrayIndex,
     ArrayIndexAssignment,
     ArrayLiteral,
+    Block,
+    FunctionCall,
     ComparisonOp,
     CompoundAssignment,
+    FunctionDecleration,
     If,
     Node,
     Number,
@@ -15,8 +18,9 @@ from flicklang.ast import (
     Assignment,
     Print,
     WhileLoop,
+    Return,
 )
-from flicklang.exceptions import ExecutionError
+from flicklang.exceptions import ExecutionError, ReturnSignal
 from flicklang.models import CompoundOperator, Operator, Comparison
 from typing import Dict, Any, cast
 
@@ -40,14 +44,14 @@ class Interpreter:
 
     def visit_String(self, node: String) -> str:
         return node.value
-    
+
     def visit_Variable(self, node: Variable) -> float:
         var_name = node.name
         if var_name in self.environment:
             return self.environment[var_name]
         else:
             raise ExecutionError(f"Undefined variable: {var_name}")
-        
+
     def visit_BinaryOp(self, node: BinaryOp) -> float:
         left = self.visit(node.left)
         right = self.visit(node.right)
@@ -93,8 +97,10 @@ class Interpreter:
         elif node.operator.type == Comparison.LSE:
             return left_value <= right_value
         else:
-            raise ExecutionError(f"Unsupported comparison operator: {node.operator.type}")
-    
+            raise ExecutionError(
+                f"Unsupported comparison operator: {node.operator.type}"
+            )
+
     def visit_ArrayLiteral(self, node: ArrayLiteral) -> list:
         return [self.visit(element) for element in node.elements]
 
@@ -155,7 +161,7 @@ class Interpreter:
         self.environment[variable_name.name] = updated_value
 
     def visit_Print(self, node: Print) -> None:
-        output = ' '.join(str(self.visit(expr)) for expr in node.expressions)
+        output = " ".join(str(self.visit(expr)) for expr in node.expressions)
         print(output)
 
     def visit_If(self, node: If) -> Any:
@@ -164,14 +170,12 @@ class Interpreter:
             raise ExecutionError("Condition expression must evaluate to a boolean.")
 
         if condition_result:
-            for statement in node.true_branch:
-                self.visit(statement)
+            self.visit(node.true_branch)
         elif node.false_branch is not None:
             if isinstance(node.false_branch, If):
                 self.visit(node.false_branch)
             else:
-                for statement in node.false_branch:
-                    self.visit(statement)
+                self.visit(node.false_branch)
 
     def visit_WhileLoop(self, node: WhileLoop) -> None:
         while True:
@@ -184,8 +188,54 @@ class Interpreter:
             if not condition_eval:
                 break
 
-            for statement in node.body:
+            self.visit(node.body)
+
+    def visit_FunctionDecleration(self, node: FunctionDecleration) -> None:
+        self.environment[node.name.value] = node
+
+    def visit_FunctionCall(self, node: FunctionCall) -> Any:
+        """
+        1. Check if the function is defined.
+        2. Validate the number of arguments provided against the number of parameters expected.
+        3. Set up a new environment for the function's execution, ensuring function calls
+           have their own local scope.
+        4. Execute the function body (visit(function.body)) which is expected to handle its
+           execution and return handling internally.
+        5. Restore the previous environment once function execution is complete.
+        6. Return the result.
+        """
+        if node.function_name not in self.environment:
+            raise ExecutionError(f"Function {node.function_name} is not defined.")
+
+        function: FunctionDecleration = self.environment[node.function_name]
+
+        if len(node.parameters) != len(function.parameters):
+            raise ExecutionError(
+                f"Expected {len(function.parameters)} arguments, got {len(node.parameters)}."
+            )
+
+        new_env = {
+            param.name: self.visit(arg)
+            for param, arg in zip(function.parameters, node.parameters)
+        }
+        old_env, self.environment = self.environment, new_env
+
+        try:
+            result = self.visit(function.body)
+            return result
+        finally:
+            self.environment = old_env
+
+    def visit_Return(self, node: Return) -> Any:
+        return_value = self.visit(node.expression)
+        raise ReturnSignal(return_value)
+
+    def visit_Block(self, node: Block) -> Any:
+        try:
+            for statement in node.statements:
                 self.visit(statement)
+        except ReturnSignal as return_signal:
+            return return_signal.value
 
     def visit(self, node: Node) -> Any:
         method_name = "visit_" + type(node).__name__
@@ -194,4 +244,3 @@ class Interpreter:
 
     def no_visit_method(self, node: Node) -> None:
         raise ExecutionError(f"No visit_{type(node).__name__} method defined")
-    

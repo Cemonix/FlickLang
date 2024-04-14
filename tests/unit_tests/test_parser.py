@@ -12,12 +12,15 @@ from flicklang.models import (
     EOFToken,
 )
 from flicklang.ast import (
+    Block,
     CompoundAssignment,
+    FunctionDecleration,
     If,
     Program,
     Number,
     BinaryOp,
     Assignment,
+    Return,
     Variable,
     WhileLoop,
 )
@@ -123,8 +126,10 @@ def test_nested_loops():
 
     assert isinstance(result, Program)
     assert isinstance(result.statements[0], WhileLoop)
-    assert isinstance(result.statements[0].body[0], WhileLoop)
-    assert isinstance(result.statements[0].body[0].body[0], Assignment)
+    assert isinstance(result.statements[0].body.statements[0], WhileLoop)
+    assert isinstance(
+        result.statements[0].body.statements[0].body.statements[0], Assignment
+    )
 
 
 def test_complex_conditionals() -> None:
@@ -162,8 +167,8 @@ def test_complex_conditionals() -> None:
     assert isinstance(result, Program)
     assert isinstance(result.statements[0], If)
     assert isinstance(result.statements[0].false_branch, If)
-    if isinstance(result.statements[0].false_branch.false_branch, list):
-        assert isinstance(result.statements[0].false_branch.false_branch[0], Assignment)
+    if isinstance(result.statements[0].false_branch.false_branch, Block):
+        assert isinstance(result.statements[0].false_branch.false_branch.statements[0], Assignment)
     else:
         assert (
             False
@@ -199,3 +204,36 @@ def test_parse_compound_assignments() -> None:
     assert (
         result.statements[0].variable_value.value == "5"
     ), f"Expected the variable value to be '5', but got {result.statements[0].variable_value.value}."
+
+
+def test_function_parsing() -> None:
+    tokens = [
+        Token(Keyword.FU, "fu"),
+        Token(Fundamental.IDENTIFIER, "add"),
+        Token(Symbol.LPAREN, "("),
+        Token(Fundamental.IDENTIFIER, "x"),
+        Token(Symbol.COMMA, ","),
+        Token(Fundamental.IDENTIFIER, "y"),
+        Token(Symbol.RPAREN, ")"),
+        Token(Symbol.BLOCK_START, "{"),
+        Token(Keyword.RET, "ret"),
+        Token(Fundamental.IDENTIFIER, "x"),
+        Token(Operator.PLUS, "+"),
+        Token(Fundamental.IDENTIFIER, "y"),
+        Token(Symbol.BLOCK_END, "}"),
+        EOFToken(Fundamental.EOF),
+    ]
+    parser = Parser(tokens)
+    result = parser.parse()
+
+    assert isinstance(result, Program), "Failed to parse the program."
+    assert isinstance(
+        result.statements[0], FunctionDecleration
+    ), "Failed to parse function declaration."
+    assert result.statements[0].name.value == "add", "Function name parsed incorrectly."
+    assert (
+        len(result.statements[0].parameters) == 2
+    ), "Function parameters parsed incorrectly."
+    assert isinstance(
+        result.statements[0].body.statements[0], Return
+    ), "Failed to parse return statement."

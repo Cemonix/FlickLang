@@ -5,8 +5,11 @@ from flicklang.ast import (
     ArrayIndexAssignment,
     ArrayLiteral,
     Assignment,
+    Block,
+    FunctionCall,
     ComparisonOp,
     CompoundAssignment,
+    FunctionDecleration,
     If,
     Node,
     Number,
@@ -17,6 +20,7 @@ from flicklang.ast import (
     UnaryOp,
     Variable,
     WhileLoop,
+    Return,
 )
 from flicklang.exceptions import ParsingError
 from flicklang.models import (
@@ -28,7 +32,7 @@ from flicklang.models import (
     Fundamental,
     Operator,
     comparisons,
-    compound_operators
+    compound_operators,
 )
 
 
@@ -48,14 +52,16 @@ class Parser:
 
     def eat(self, token_type: SyntaxTokenType) -> None:
         if isinstance(self.current_token, EOFToken):
-            raise ParsingError(f"Expected {token_type} but found EOF", self.current_token)
+            raise ParsingError(
+                f"Expected {token_type} but found EOF", self.current_token
+            )
 
         if self.current_token.type != token_type:
             raise ParsingError(
                 f"Expected {token_type}, but found {self.current_token.type}",
-                self.current_token
+                self.current_token,
             )
-    
+
         self.advance()
 
     def peek_token(self) -> Token | EOFToken:
@@ -98,6 +104,8 @@ class Parser:
             return self.parse_if_statement()
         elif self.current_token.type == Keyword.W:
             return self.parse_while_loop_statement()
+        elif self.current_token.type == Keyword.FU:
+            return self.parse_function_declaration()
         else:
             return self.expression()
 
@@ -108,10 +116,12 @@ class Parser:
         next_token = self.peek_token()
         if next_token.type in compound_operators:
             return self.parse_compound_assignment()
-        if next_token.type == Operator.ASSIGN:
+        elif next_token.type == Operator.ASSIGN:
             return self.parse_assignment()
         elif next_token.type == Symbol.LBRACKET:
             return self.parse_array_access_or_assignment()
+        elif next_token.type == Symbol.LPAREN:
+            return self.parse_function_call()
 
         raise ParsingError("Invalid syntax after identifier.", self.current_token)
 
@@ -168,18 +178,30 @@ class Parser:
 
         return Print(expressions)
 
-    def parse_block(self) -> List[Node]:
+    def parse_block(self) -> Block:
         statements = []
         self.eat(Symbol.BLOCK_START)
         while self.current_token.type != Symbol.BLOCK_END:
             if isinstance(self.current_token, EOFToken):
                 raise ParsingError(
-                    "Unexpected EOF while parsing array literal.", self.current_token
+                    "Unexpected EOF while parsing block.", self.current_token
                 )
-            statements.append(self.parse_statement())
+            if self.current_token.type == Keyword.RET:
+                statements.append(self.parse_return_statement())
+            else:
+                statements.append(self.parse_statement())
         self.eat(Symbol.BLOCK_END)
-        return statements
-    
+        return Block(statements=statements)
+
+    def parse_return_statement(self) -> Return:
+        self.eat(Keyword.RET)
+        if isinstance(self.current_token, EOFToken):
+            raise ParsingError(
+                "Unexpected EOF while parsing return statement.", self.current_token
+            )
+        expression = self.expression()
+        return Return(expression=expression)
+
     def parse_assignment(self) -> Node:
         """
         Parses an assignment statement.
@@ -196,29 +218,31 @@ class Parser:
             variable_name=Variable(identifier.value),
             variable_value=self.expression(),
         )
-    
+
     def parse_compound_assignment(self) -> Node:
         if isinstance(self.current_token, EOFToken):
             raise ParsingError(
                 "Unexpected EOF while parsing if statement.", self.current_token
             )
-        
+
         variable_name_token = self.current_token
         self.eat(Fundamental.IDENTIFIER)
-        
+
         operator_token = self.current_token
         if operator_token.type not in compound_operators:
-            raise ParsingError("Expected compound operator after identifier.", operator_token)
-        
+            raise ParsingError(
+                "Expected compound operator after identifier.", operator_token
+            )
+
         self.eat(operator_token.type)
         right_expression = self.expression()
 
         return CompoundAssignment(
             variable_name=Variable(variable_name_token.value),
             op_token=operator_token,
-            variable_value=right_expression
+            variable_value=right_expression,
         )
-    
+
     def parse_comparison(self) -> Node:
         if isinstance(self.current_token, EOFToken):
             raise ParsingError(
@@ -233,7 +257,7 @@ class Parser:
             node = ComparisonOp(left=node, operator=token, right=self.expression())
 
         return node
-    
+
     def parse_array_literal(self) -> ArrayLiteral:
         elements = []
         self.eat(Symbol.LBRACKET)
@@ -242,7 +266,7 @@ class Parser:
             raise ParsingError(
                 "Unexpected EOF while parsing array literal.", self.current_token
             )
-        
+
         if not self.current_token.type == Symbol.RBRACKET:
             elements.append(self.expression())
             while self.current_token.type == Symbol.COMMA:
@@ -251,11 +275,11 @@ class Parser:
 
         self.eat(Symbol.RBRACKET)
         return ArrayLiteral(elements)
-    
+
     def parse_array_access_or_assignment(self) -> ArrayIndexAssignment | ArrayIndex:
         if isinstance(self.current_token, EOFToken):
             raise ParsingError(
-                "Unexpected EOF while parsing statements.", self.current_token
+                "Unexpected EOF while parsing array access.", self.current_token
             )
 
         variable_token = self.current_token
@@ -272,7 +296,69 @@ class Parser:
             )
         else:
             return ArrayIndex(array=Variable(variable_token.value), index=index)
-    
+
+    def parse_function_declaration(self) -> FunctionDecleration:
+        if isinstance(self.current_token, EOFToken):
+            raise ParsingError(
+                "Unexpected EOF while parsing function declaration.", self.current_token
+            )
+
+        self.eat(Keyword.FU)
+        func_name = self.current_token
+        self.eat(Fundamental.IDENTIFIER)
+
+        self.eat(Symbol.LPAREN)
+        parameters = self.parse_parameter_list(context="function_declaration")
+        self.eat(Symbol.RPAREN)
+
+        return FunctionDecleration(
+            name=func_name,
+            parameters=cast(List[Variable], parameters),
+            body=self.parse_block(),
+        )
+
+    def parse_function_call(self) -> FunctionCall:
+        if isinstance(self.current_token, EOFToken):
+            raise ParsingError(
+                "Unexpected EOF while parsing call expression.", self.current_token
+            )
+
+        function_name_token = self.current_token
+        self.eat(Fundamental.IDENTIFIER)
+
+        self.eat(Symbol.LPAREN)
+        parameters = self.parse_parameter_list(context="function_call")
+        self.eat(Symbol.RPAREN)
+
+        return FunctionCall(
+            function_name=function_name_token.value, parameters=parameters
+        )
+
+    def parse_parameter_list(self, context: str) -> List[Node]:
+        parameters = []
+        while self.current_token.type != Symbol.RPAREN:
+            if isinstance(self.current_token, EOFToken):
+                raise ParsingError(
+                    "Unexpected EOF while parsing parameter list.", self.current_token
+                )
+
+            if context == "function_declaration":
+                if self.current_token.type != Fundamental.IDENTIFIER:
+                    raise ParsingError(
+                        f"Expected identifier in parameter list, got {self.current_token.type}",
+                        self.current_token,
+                    )
+                parameters.append(Variable(self.current_token.value))
+                self.eat(Fundamental.IDENTIFIER)
+
+            elif context == "function_call":
+                parameters.append(self.expression())
+
+            if self.current_token.type == Symbol.COMMA:
+                self.eat(Symbol.COMMA)
+
+        return parameters
+
     def expression(self) -> Node | BinaryOp:
         """Parse an expression (term followed by zero or more addition/subtraction)."""
         node = self.term()
@@ -285,7 +371,7 @@ class Parser:
                 raise ParsingError(
                     "Unexpected EOF while parsing expression.", self.current_token
                 )
-            
+
             token = self.current_token
             if token.type == Operator.PLUS:
                 self.eat(Operator.PLUS)
@@ -294,17 +380,21 @@ class Parser:
 
             node = BinaryOp(left=node, op_token=token, right=self.term())
         return node
-    
+
     def term(self) -> Node | BinaryOp:
         """Parse a term (factor followed by zero or more multiplication/division)."""
         node: Node = self.factor()
 
-        while self.current_token.type in (Operator.MULTIPLY, Operator.DIVIDE, Operator.MODULO):
+        while self.current_token.type in (
+            Operator.MULTIPLY,
+            Operator.DIVIDE,
+            Operator.MODULO,
+        ):
             if isinstance(self.current_token, EOFToken):
                 raise ParsingError(
                     "Unexpected EOF while parsing term.", self.current_token
                 )
-            
+
             token = self.current_token
             if token.type == Operator.MULTIPLY:
                 self.eat(Operator.MULTIPLY)
@@ -315,7 +405,7 @@ class Parser:
 
             node = BinaryOp(left=node, op_token=token, right=self.factor())
         return node
-    
+
     def factor(self) -> Node:
         """Parse a factor (number or parenthesized expression), reducing consecutive unary minus."""
         # Count consecutive unary minus operators
@@ -331,7 +421,7 @@ class Parser:
             return UnaryOp(op_token=Token(Operator.MINUS, "-"), operand=node)
 
         return node
-    
+
     def parse_simple_factor(self) -> Node:
         """Parse a simple factor without unary minus handling."""
         self.current_token = cast(Token, self.current_token)
@@ -347,9 +437,12 @@ class Parser:
         elif self.current_token.type == Fundamental.IDENTIFIER:
             if self.peek_token().type == Symbol.LBRACKET:
                 return self.parse_array_access_or_assignment()
-            value = self.current_token.value
-            self.eat(Fundamental.IDENTIFIER)
-            return Variable(value)
+            elif self.peek_token().type == Symbol.LPAREN:
+                return self.parse_function_call()
+            else:
+                value = self.current_token.value
+                self.eat(Fundamental.IDENTIFIER)
+                return Variable(value)
         elif self.current_token.type == Fundamental.STRING:
             value = self.current_token.value
             self.eat(Fundamental.STRING)
@@ -357,5 +450,7 @@ class Parser:
         elif self.current_token.type == Symbol.LBRACKET:
             return self.parse_array_literal()
         else:
-            raise ParsingError(f"Unexpected token type in factor: {self.current_token.type}", self.current_token)
-        
+            raise ParsingError(
+                f"Unexpected token type in factor: {self.current_token.type}",
+                self.current_token,
+            )

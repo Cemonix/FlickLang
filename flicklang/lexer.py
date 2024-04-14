@@ -1,4 +1,3 @@
-from lib2to3.pygram import Symbols
 from typing import List
 
 from flicklang.exceptions import TokenizationError
